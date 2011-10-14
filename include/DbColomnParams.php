@@ -10,20 +10,54 @@
 
 class DbColomnParams
 {
+    /**
+     * Имя поля
+     *
+     * @var string
+     */
 	public $name = null;
 
+    /**
+     * Тип поля
+     *
+     * @var string
+     */
 	public $type = null;
 
-	public $isNullable = true;
+    /**
+     * Возможно ли значение null
+     *
+     * @var bool
+     */
+	public $allowNull = true;
 
+    /**
+     * Является ли беззнаковым
+     *
+     * @var bool
+     */
 	public $isUnsigned = false;
 
-	public $isUnique = false;
-	
+    /**
+     * Является ли id
+     *
+     * @var bool
+     */
 	public $isId = false;
 
+    /**
+     * Является ли автоинкрементным
+     *
+     * @var bool
+     */
 	public $isAutoIncremented = false;
 
+    /**
+     * Преобразует описание аннотации в объект класса
+     *
+     * @param $desc Описание поля
+     * @return DbColomnParams
+     */
 	public static function parse($desc)
 	{
 		$arr = array();
@@ -47,11 +81,8 @@ class DbColomnParams
 		if (isset($arr["type"]) && !empty($arr["type"]))
 			$p->type = $arr["type"];
 
-		if (isset($arr["nullable"]) && self::isBool($arr["nullable"]))
-			$p->isNullable = self::getBool($arr["nullable"]);
-
-		if (isset($arr["unique"]) && self::isBool($arr["unique"]))
-			$p->isUnique =  self::getBool($arr["unique"]);
+		if (isset($arr["allowNull"]) && self::isBool($arr["allowNull"]))
+			$p->allowNull = self::getBool($arr["allowNull"]);
 
 		if (isset($arr["unsigned"]) && self::isBool($arr["unsigned"]))
 			$p->isUnsigned =  self::getBool($arr["unsigned"]);

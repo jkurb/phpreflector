@@ -6,7 +6,9 @@ This file was created by JetBrains PhpStorm 2.1.2 for binding GitHub repository
 
 - вставляются отнаследованные интерфесы, вся иерархия
 
-- добавление unsigned, primary в анноттации
+
+
+
 
 - нахождение отличий и добавление либо в класс либо в таблицу
 

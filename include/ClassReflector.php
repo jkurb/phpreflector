@@ -21,6 +21,7 @@ class ClassReflector implements IClassReflector
 	private $classRef = null;
 
 	const PHPDOC_TAG_COLUMN = "column";
+    const INDENT = "\t";
 
 	function __construct(Zend_Reflection_Class $classRef)
 	{
@@ -35,7 +36,16 @@ class ClassReflector implements IClassReflector
 
 	public static function createFromTable($config, $tbname)
 	{
-		// TODO: Implement createFromTable() method.
+        // table to class string
+        $classStr = self::tableToClassString($config, $tbname);
+
+        var_dump($classStr);
+
+        exit();
+
+        eval($classStr);
+
+        return new ClassReflector(new Zend_Reflection_Class(ucfirst($tbname)));
 	}
 
 	public function reflectToTable($config, $tbname)
@@ -64,7 +74,7 @@ class ClassReflector implements IClassReflector
 
 			if ($columnParams->isId)
 			{
-				$columnParams->isNullable = false;
+				$columnParams->allowNull = false;
 				$columnParams->isUnsigned = true;
 				$columnParams->type = "int(11)";
 				$columnParams->isAutoIncremented = true;
@@ -80,7 +90,7 @@ class ClassReflector implements IClassReflector
 				$options .= "UNSIGNED";
 			}
 
-			if ($columnParams->isNullable)
+			if ($columnParams->allowNull)
 			{
 				$options .= " DEFAULT NULL";
 			}
@@ -125,7 +135,7 @@ class ClassReflector implements IClassReflector
 
 		$str .= $this->getStrProperties();
 		$str .= $this->getStrConstants();
-		$str .=  $this->getStrMethods();
+		$str .= $this->getStrMethods();
 
 		$str .= "}";
 		$str .= "\n?>";
@@ -177,9 +187,9 @@ class ClassReflector implements IClassReflector
 		/** @var $p Zend_Reflection_Property */
 		foreach ($this->classRef->getProperties() as $p)
 		{
-			$str .= "    ";
+			$str .= self::INDENT;
 			$str .= $p->getDocComment()->getContents() . "\n";
-			$str .= "    ";
+			$str .= self::INDENT;
 
 			foreach (Reflection::getModifierNames($p->getModifiers()) as $m)
 				$str .= "$m ";
@@ -208,7 +218,7 @@ class ClassReflector implements IClassReflector
 		{
 			if (!key_exists($cName, $parentConsts))
 			{
-				$str .= "    const ";
+				$str .= self::INDENT . "const ";
 				$str .= $cName . " = " . $this->getVal($cVal) . ";";
 				$str .= "\n\n";
 			}
@@ -225,9 +235,9 @@ class ClassReflector implements IClassReflector
 		{
 			if ($m->getDeclaringClass()->getName() == "User")
 			{
-				$str .= "    ";
+				$str .= self::INDENT;
 				$str .= $m->getDocComment() . "\n";
-				$str .= "    ";
+				$str .= self::INDENT;
 
 				foreach (Reflection::getModifierNames($m->getModifiers()) as $mod)
 					$str .= "$mod ";
@@ -250,9 +260,9 @@ class ClassReflector implements IClassReflector
 
 				$str .= ")";
 
-				$str .= "\n    {\n";
+				$str .= "\n" . self::INDENT . "{\n";
 				$str .= $m->getBody();
-				$str .= "\n    }";
+				$str .= "\n" . self::INDENT . "}";
 
 				$str .= "\n\n";
 			}
@@ -267,6 +277,18 @@ class ClassReflector implements IClassReflector
 			(is_string($val) ? "\"$val\"" : $val);
 
 	}
+
+
+    private static function tableToClassString($config, $tblName)
+    {
+        $conf = new Zend_Config($config);
+		$db = Zend_Db::factory($conf->database);
+		$db->getConnection();
+
+        $fieldsMeta = $db->fetchAssoc("SHOW FULL COLUMNS FROM {$tblName}");
+
+        var_dump($fieldsMeta);
+    }
 
 	/*
 	private static function recognizeDbType($phpType)

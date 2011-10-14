@@ -17,5 +17,6 @@ return array(
             'password' => 'toor',
             'dbname'   => 'temp'
         )
-    )
+    ),
+    'entityTemplate' => 'class.tpl'
 );

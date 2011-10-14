@@ -18,10 +18,12 @@ require_once "include/ClassReflector.php";
  * @column(name="myfield", type="varchar(256)", unique=false, nullable=false)
  */
 
-$clsRef = ClassReflector::createFromFile("res/User.php", "User");
+$clsRef = ClassReflector::createFromTable(require "config.php", "user");
+
+//$clsRef = ClassReflector::createFromFile("res/User.php", "User");
 
 //$clsRef->reflectToFile("res/CopyUser.php", "CopyUser");
 
-$clsRef->reflectToTable(require "config.php", "user");
+//$clsRef->reflectToTable(require "config.php", "user");
 
 

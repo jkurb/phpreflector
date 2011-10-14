@@ -43,7 +43,7 @@ class DbColomnParamsTest extends PHPUnit_Framework_TestCase
 	    $this->assertEquals("myfield", $p->name);
 	    $this->assertEquals("varchar(256)", $p->type);
 	    $this->assertEquals(false, $p->isUnique);
-	    $this->assertEquals(false, $p->isNullable);
+	    $this->assertEquals(false, $p->allowNull);
 	    $this->assertEquals(false, $p->isId);
 	    $this->assertEquals(true, $p->isUnsigned);
 
@@ -51,7 +51,7 @@ class DbColomnParamsTest extends PHPUnit_Framework_TestCase
 	    $this->assertEquals(null, $p->name);
 	    $this->assertEquals("varchar(256)", $p->type);
 	    $this->assertEquals(true, $p->isUnique);
-	    $this->assertEquals(true, $p->isNullable);
+	    $this->assertEquals(true, $p->allowNull);
 	    $this->assertEquals(false, $p->isId);
 	    $this->assertEquals(true, $p->isUnsigned);
 

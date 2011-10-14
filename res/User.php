@@ -4,8 +4,8 @@
  *
  * PHP version 5
  *
- * @package
- * @author   Eugene Kurbatov <ekur@i-loto.ru>
+ * @package Tools
+ * @author  Eugene Kurbatov <ekur@i-loto.ru>
  */
 
 require_once 'Entity.php';
@@ -18,7 +18,7 @@ class User extends Entity
 	 * @var string
 	 */
 	public $entityTable = "user";
-	
+
 	/**
 	 * Первичный ключ, обычно соответствует атрибуту "id".
 	 * 
@@ -29,52 +29,52 @@ class User extends Entity
 	/**
 	 * Пароль пользователя
 	 *
-	 * @column(type="varchar(256)", unique=true, nullable=false)
-	 * @var string
+     * @var string
+	 * @column type="varchar(256)", unique=true, nullable=false
 	 */
 	public $password;
 
 	/**
 	 * Email пользователя
 	 *
-	 * @column(type="varchar(256)", unique=true, nullable=false)
-	 * @var string
+     * @var string
+	 * @column type="varchar(256)", unique=true, nullable=false
 	 */
 	public $email = null;
 
 	/**
 	 * Номер сотового телефона
 	 *
+     * @var string
 	 * @column type="varchar(256)", nullable=false
-	 * @var string
 	 */
 	public $cellPhone = null;
 
 	/**
 	 * Статус пользователя
 	 *
-	 * @column(type="varchar(64)", unique=true, nullable=false)
-	 * @var string
+     * @var string
+	 * @column type="varchar(64)", unique=true, nullable=false
 	 */
-	public $status = self::STATUS_UNVERIFIED;
+	public $status = 1;
 
 	/**
 	 * Дата регистрации
 	 *
-	 * @column(name="regDate", type="datetime", unique=true, nullable=false)
-	 * @var DateTime
+     * @var DateTime
+	 * @column name="regDate", type="datetime", unique=true, nullable=false
 	 */
 	public $registrationDate = null;
 
 
-    /**
-     * Represents hash like this:
-     *
-     * @return  array ('id' => ENTITY_FIELD_INT, 'name'=>ENTITY_FIELD_STRING)
-     * */
-    public function getFields()
-    {
-        // TODO: Implement getFields() method.
-    }
+	/**
+	 * Represents hash like this:
+	 *
+	 * @return  array ('id' => ENTITY_FIELD_INT, 'name'=>ENTITY_FIELD_STRING)
+	 */
+	public function getFields()
+	{
+		// TODO: Implement getFields() method.
+	}
 }
 ?>
