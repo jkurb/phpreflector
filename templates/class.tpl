@@ -1,4 +1,3 @@
-<?php
 /**
  * {TABLE_COMMENT}
  *
@@ -38,5 +37,3 @@ class {ENTITY_NAME} extends Entity
 		);
 	}
 }
-
-?>

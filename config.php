@@ -9,14 +9,17 @@
  */
 
 return array(
-    'database' => array(
-        'adapter' => 'pdo_mysql',
-        'params'  => array(
-            'host'     => 'localhost',
-            'username' => 'root',
-            'password' => 'toor',
-            'dbname'   => 'temp'
+    "database" => array(
+        "adapter" => "pdo_mysql",
+        "params"  => array(
+            "host"     => "localhost",
+            "username" => "root",
+            "password" => "toor",
+            "dbname"   => "payanyway_temp",
+            "driver_options" => array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8")
         )
     ),
-    'entityTemplate' => 'class.tpl'
+    "entityTemplate" => "templates/class.tpl",
+
+    "fieldTemplate" => "templates/field.tpl"
 );

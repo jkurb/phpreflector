@@ -38,7 +38,7 @@ class DbColomnParamsTest extends PHPUnit_Framework_TestCase
 
     public function testParse()
     {
-        $p = DbColomnParams::parse('name="myfield", type="varchar(256)", unique=false, nullable=false, unsigned=true');
+        $p = Field::extract('name="myfield", type="varchar(256)", unique=false, nullable=false, unsigned=true');
 
 	    $this->assertEquals("myfield", $p->name);
 	    $this->assertEquals("varchar(256)", $p->type);
@@ -47,7 +47,7 @@ class DbColomnParamsTest extends PHPUnit_Framework_TestCase
 	    $this->assertEquals(false, $p->isId);
 	    $this->assertEquals(true, $p->isUnsigned);
 
-	    $p = DbColomnParams::parse('type="varchar(256)", nullable=true, unsigned=true, unique=true');
+	    $p = Field::extract('type="varchar(256)", nullable=true, unsigned=true, unique=true');
 	    $this->assertEquals(null, $p->name);
 	    $this->assertEquals("varchar(256)", $p->type);
 	    $this->assertEquals(true, $p->isUnique);
@@ -55,10 +55,10 @@ class DbColomnParamsTest extends PHPUnit_Framework_TestCase
 	    $this->assertEquals(false, $p->isId);
 	    $this->assertEquals(true, $p->isUnsigned);
 
-	    $p = DbColomnParams::parse('type="timestamp"');
+	    $p = Field::extract('type="timestamp"');
 	    $this->assertEquals("timestamp", $p->type);
 
-	    $p = DbColomnParams::parse('id');
+	    $p = Field::extract('id');
 	    $this->assertEquals(true, $p->isId);
 
     }
@@ -68,7 +68,7 @@ class DbColomnParamsTest extends PHPUnit_Framework_TestCase
 	*/
 	public function testRequiredId()
 	{
-		DbColomnParams::parse('unique=false, nullable=false, unsigned=true');
+		Field::extract('unique=false, nullable=false, unsigned=true');
 	}
 }
 ?>

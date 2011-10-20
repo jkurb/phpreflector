@@ -30,7 +30,7 @@ class User extends Entity
 	 * Пароль пользователя
 	 *
      * @var string
-	 * @column type="varchar(256)", unique=true, nullable=false
+	 * @column type="varchar(256)", allowNull=false
 	 */
 	public $password;
 
@@ -38,7 +38,7 @@ class User extends Entity
 	 * Email пользователя
 	 *
      * @var string
-	 * @column type="varchar(256)", unique=true, nullable=false
+	 * @column type="varchar(256)", allowNull=false
 	 */
 	public $email = null;
 
@@ -46,7 +46,7 @@ class User extends Entity
 	 * Номер сотового телефона
 	 *
      * @var string
-	 * @column type="varchar(256)", nullable=false
+	 * @column type="varchar(256)", allowNull=false
 	 */
 	public $cellPhone = null;
 
@@ -54,7 +54,7 @@ class User extends Entity
 	 * Статус пользователя
 	 *
      * @var string
-	 * @column type="varchar(64)", unique=true, nullable=false
+	 * @column type="varchar(64)", allowNull=false
 	 */
 	public $status = 1;
 
@@ -62,7 +62,7 @@ class User extends Entity
 	 * Дата регистрации
 	 *
      * @var DateTime
-	 * @column name="regDate", type="datetime", unique=true, nullable=false
+	 * @column name="regDate", type="datetime", allowNull=false, default="CURRENT_TIMESTAMP"
 	 */
 	public $registrationDate = null;
 

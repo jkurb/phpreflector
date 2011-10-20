@@ -8,13 +8,13 @@
  * @author   Eugene Kurbatov <ekur@i-loto.ru>
  */
 
-interface IClassReflector
+interface IEntityMetaManager
 {
 	public static function createFromFile($path, $classname);
 
 	public static function createFromTable($config, $tbname);
 
-	public function reflectToTable($config, $tbname);
+	public static function saveToTable($config, $tbname);
 
-	public function reflectToFile($path, $classname);
+	public static function saveToFile($path, $classname);
 }
