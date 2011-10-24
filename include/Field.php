@@ -160,4 +160,12 @@ class Field
 	{
 		return $str == "true";
 	}
+
+    public function getColumnAnnotation()
+    {
+        $s = "@column ";
+
+
+
+    }
 }

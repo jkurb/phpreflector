@@ -1,5 +1,5 @@
 /**
- * {TABLE_COMMENT}
+ * {ENTITY_COMMENT}
  *
  * PHP version 5
  *
@@ -23,7 +23,8 @@ class {ENTITY_NAME} extends Entity
 	 */
 	public $primaryKey = "{PRIMARY_KEY}";
 
-{FIELDS_META_DATA}
+{FIELDS}
+{CONSTANTS}
 
 	/**
 	 * Возвращает список полей сущности и их типы
@@ -36,4 +37,7 @@ class {ENTITY_NAME} extends Entity
 {FIELDS_LIST}
 		);
 	}
+
+{METHODS}
+
 }

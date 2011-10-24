@@ -160,44 +160,179 @@ class EntityMetaManager implements IEntityMetaManager
 
 	}
 
-	public static function saveToFile($path, $classname)
+    /**
+     * @static
+     * @param EntityMeta $entity
+     * @param string $path
+     * @return void
+     */
+	public static function saveToFile($entity, $path)
 	{
-//		$str = "<?php\n";
-//		$str .= $this->classRef->getDocComment() . "\n\n";
-//		$str .= $this->getStrClassDeclaration($classname);
-//
-//		$str .= "\n{\n";
-//
-//		$str .= $this->getStrProperties();
-//		$str .= $this->getStrConstants();
-//		$str .= $this->getStrMethods();
-//
-//		$str .= "}";
-//		$str .= "\n>";
-//
-//		file_put_contents($path, $str);
-//		echo $str;
+        //выполним слияние
+        if (is_file($path))
+        {
+            require_once $path;
+            $classRef = new Zend_Reflection_Class($entity->name);
+
+            $str = "<?php\n";
+            $str .= $classRef->getDocComment() . "\n\n";
+		    $str .= self::getStrClassDeclaration($classRef);
+
+		    $str .= "\n{\n";
+
+            //пишем поля класса
+
+		    $defaultProps = $classRef->getDefaultProperties();
+
+            //ищем одинаковые
+            /** @var $p Zend_Reflection_Property */
+            foreach ($classRef->getProperties() as $p)
+            {
+                $fieldSource = self::getFieldByName($entity, $p->getName());
+                //найдены одинаковые поля, сравниваем, если различны перезаписывает из сущности
+                if (!is_null($fieldSource))
+                {
+                    $fieldDest = Field::extract($p, $defaultProps);
+
+                    //пробежим по атрибутам поля источника
+                    foreach ($fieldSource as $fieldAtrib)
+                    {
+                        //если значение атрибутов различно,
+                        //пишем поле на основе шаблона
+                        if ()
+                    }
+
+
+
+
+
+
+
+                    $type = preg_replace('/\(.*\)/', "", $f->type);
+                    $replaceMapFileld =  array
+                    (
+                        "{COMMENT}"           => $f->comment,
+                        "{TYPE}"              => self::recognizeDbType($type),
+                        "{COLUMN_ANNOTATION}" => self::PHPDOC_TAG_COLUMN . ".....",
+                        "{COLUMN_NAME}"       => $f->name,
+                        "{DEFAULT_VALUE}"     => $f->default
+                    );
+
+                    $fieldsStr .= str_replace(
+                        array_keys($replaceMapFileld),
+                        array_values($replaceMapFileld),
+                        file_get_contents($conf->get("fieldTemplate"))
+                    );
+                }
+                else
+                {
+                    $str .= self::INDENT;
+                    $str .= $p->getDocComment()->getContents() . "\n";
+                    $str .= self::INDENT;
+
+                    foreach (Reflection::getModifierNames($p->getModifiers()) as $m)
+                        $str .= "$m ";
+
+                    $val = $p->isStatic() ? $p->getValue($p) : $defaultProps[$p->getName()];
+                    $str .= "$" . $p->getName() . " = " . self::getVal($val) . ";";
+                    $str .= "\n\n";
+                }
+
+            }
+
+		    //$str .= self::getStrProperties($classRef);
+
+
+
+		    $str .= self::getStrConstants($classRef);
+		    $str .= self::getStrMethods($classRef);
+
+		    $str .= "}";
+		    $str .= "\n>";
+
+		    file_put_contents($path, $str);
+
+        }
+
+
+        //if file exist
+            //read file to reflection
+            //if class found
+                //search class fields not found in entity
+                //export
+        //else
+            //insert variables in templates
+            //put new file
+
 	}
 
+    /**
+     * @static
+     * @param EntityMeta $entity
+     * @param string $name
+     * @return Field
+     */
+    private static function getFieldByName($entity, $name)
+    {
+        foreach ($entity->fields as $f)
+        {
+            if ($f->name == $name)
+            {
+                return $f->name;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @static
+     * @param Zend_Reflection_Class $classRef
+     * @param $path
+     * @return void
+     */
+    private static function saveReflectionAsFile($classRef, $path)
+    {
+		$str = "<?php\n";
+		$str .= $classRef->getDocComment() . "\n\n";
+		$str .= self::getStrClassDeclaration($classRef);
+
+		$str .= "\n{\n";
+
+		$str .= self::getStrProperties($classRef);
+		$str .= self::getStrConstants($classRef);
+		$str .= self::getStrMethods($classRef);
+
+		$str .= "}";
+		$str .= "\n>";
+
+		file_put_contents($path, $str);
+		//echo $str;
+    }
 
 
 
-    
-	private function getStrClassDeclaration($classname)
+    /**
+     * @static
+     * @param Zend_Reflection_Class $classRef
+     * @return string
+     */
+	private static function getStrClassDeclaration($classRef)
 	{
 		$str = "";
-		foreach (Reflection::getModifierNames($this->classRef->getModifiers()) as $m)
+		foreach (Reflection::getModifierNames($classRef->getModifiers()) as $m)
 			$str .= "$m ";
 
-		$str .= "class " . $classname;
+		$str .= "class " . $classRef->getName();
 
-		$parentClass = $this->classRef->getParentClass();
+		$parentClass = $classRef->getParentClass();
 
-		if ($parentClass) {
+		if ($parentClass)
+        {
 			$str .= " extends " . $parentClass->getName();
 		}
 
-		$interfaces = $this->classRef->getInterfaces();
+		$interfaces = $classRef->getInterfaces();
 
 		if (count($interfaces) > 0)
 		{
@@ -218,13 +353,18 @@ class EntityMetaManager implements IEntityMetaManager
 		return $str;
 	}
 
-	private function getStrProperties()
+    /**
+     * @static
+     * @param Zend_Reflection_Class $classRef
+     * @return string
+     */
+	private static function getStrProperties($classRef)
 	{
 		$str = "";
-		$defaultProps = $this->classRef->getDefaultProperties();
+		$defaultProps = $classRef->getDefaultProperties();
 
 		/** @var $p Zend_Reflection_Property */
-		foreach ($this->classRef->getProperties() as $p)
+		foreach ($classRef->getProperties() as $p)
 		{
 			$str .= self::INDENT;
 			$str .= $p->getDocComment()->getContents() . "\n";
@@ -235,7 +375,7 @@ class EntityMetaManager implements IEntityMetaManager
 
 			$val = $p->isStatic() ? $p->getValue($p) : $defaultProps[$p->getName()];
 
-			$str .= "$" . $p->getName() . " = " . $this->getVal($val) . ";";
+			$str .= "$" . $p->getName() . " = " . self::getVal($val) . ";";
 
 			$str .= "\n\n";
 		}
@@ -243,17 +383,21 @@ class EntityMetaManager implements IEntityMetaManager
 		return $str;
 	}
 
-	private function getStrConstants()
+    /**
+     * @param Zend_Reflection_Class $classRef
+     * @return string
+     */
+	private static function getStrConstants($classRef)
 	{
 		$str = "";
-		$parentClass = $this->classRef->getParentClass();
+		$parentClass = $classRef->getParentClass();
 		$parentConsts = array();
 		if ($parentClass)
 		{
 			$parentConsts = $parentClass->getConstants();
 		}
 
-		foreach ($this->classRef->getConstants() as $cName => $cVal)
+		foreach ($classRef->getConstants() as $cName => $cVal)
 		{
 			if (!key_exists($cName, $parentConsts))
 			{
@@ -262,15 +406,18 @@ class EntityMetaManager implements IEntityMetaManager
 				$str .= "\n\n";
 			}
 		}
-
 		return $str;
 	}
 
-	private function getStrMethods()
+    /**
+     * @param Zend_Reflection_Class $classRef
+     * @return string
+     */
+	private static function getStrMethods($classRef)
 	{
 		$str = "";
 		/** @var $m Zend_Reflection_Method */
-		foreach ($this->classRef->getMethods() as $m)
+		foreach ($classRef->getMethods() as $m)
 		{
 			if ($m->getDeclaringClass()->getName() == "User")
 			{
@@ -406,13 +553,4 @@ class EntityMetaManager implements IEntityMetaManager
                 throw new Exception("Undefined type '{$dbType}'") ;
         }
 	}
-
-    private static function getColumnAnnotation($type, $null, $default)
-    {
-        //Type
-        //Null
-        //Default
-        //Extra
-    }
-
 }
