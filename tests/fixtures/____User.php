@@ -54,7 +54,7 @@ class User extends Entity
 	 * Статус пользователя
 	 *
      * @var string
-	 * @column type="varchar(50)", allowNull=false
+	 * @column type="int(1)", allowNull=false
 	 */
 	public $status = 1;
 
@@ -62,7 +62,7 @@ class User extends Entity
 	 * Дата регистрации
 	 *
      * @var DateTime
-	 * @column name="regDate", type="datetime", allowNull=false, default="CURRENT_TIMESTAMP"
+	 * @column name="registrationDate", type="timestamp", allowNull=false, default="CURRENT_TIMESTAMP"
 	 */
 	public $registrationDate = null;
 

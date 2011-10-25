@@ -23,7 +23,10 @@ require_once "include/EntityMetaManager.php";
  * @column name="myfield", type="varchar(256)", unique=false, nullable=false
  */
 
-$ent = EntityMetaManager::createFromTable(require "config.php", "user");
+
+EntityMetaManager::init(require_once "config.php");
+
+$ent = EntityMetaManager::createFromTable("user");
 
 EntityMetaManager::saveToFile($ent, "tests/fixtures/User.php");
 

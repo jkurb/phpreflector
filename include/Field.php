@@ -122,7 +122,7 @@ class Field
             $field->isPrimaryKey = true;
             $field->isAutoincremented = true;
             $field->isId = true;
-            $field->type = "int(11) insigned";
+            $field->type = "int(11) unsigned";
             $field->allowNull = false;
         }
 
@@ -163,9 +163,9 @@ class Field
 
     public function getColumnAnnotation()
     {
-        $s = "@column ";
+        $s = "@column";
 
-
+		//todo: inmplement
 
     }
 }

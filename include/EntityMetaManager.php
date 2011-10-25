@@ -21,6 +21,30 @@ class EntityMetaManager implements IEntityMetaManager
 	const PHPDOC_TAG_COLUMN = "column";
     const INDENT = "\t";
 
+	/**
+	 * @var Zend_Config
+	 */
+	private static $config = null;
+
+	/**
+	 * Инициализация менеджера
+	 *
+	 * @static
+	 * @param $conf
+	 * @return void
+	 */
+	public static function init($conf)
+	{
+		self::$config = new Zend_Config($conf);
+	}
+
+	/**
+	 * Создание мета-сущности из файла
+	 *
+	 * @param $path
+	 * @param $classname
+	 * @return EntityMeta
+	 */
 	public static function createFromFile($path, $classname)
 	{
 		require_once $path;
@@ -43,16 +67,21 @@ class EntityMetaManager implements IEntityMetaManager
         return $entityMeta;
 	}
 
-	public static function createFromTable($config, $tblName)
+	/**
+	 * Создание мета-сущности из таблицы
+	 *
+	 * @param $tblName
+	 * @return EntityMeta
+	 */
+	public static function createFromTable($tblName)
 	{
         $entityMeta = new EntityMeta();
 
-        $conf = new Zend_Config($config);
-		$db = Zend_Db::factory($conf->database);
+		$db = Zend_Db::factory(self::$config->get("database"));
 		$db->getConnection();
 
-        $tableMeta = $db->fetchAssoc("SHOW TABLE STATUS FROM
-            {$conf->database->params->dbname} WHERE Name = '{$tblName}'");
+        $tableMeta = $db->fetchAssoc("SHOW TABLE STATUS FROM " .
+            self::$config->database->params->dbname . " WHERE Name = '{$tblName}'");
 
         $entityMeta->comment = $tableMeta[$tblName]["Comment"];
         $entityMeta->name = ucfirst($tblName);
@@ -82,7 +111,8 @@ class EntityMetaManager implements IEntityMetaManager
         return $entityMeta;        
 	}
 
-	public static function saveToTable($config, $tbname)
+
+	public static function saveToTable($tbname)
 	{
 
 //		$conf = new Zend_Config($config);
@@ -161,7 +191,8 @@ class EntityMetaManager implements IEntityMetaManager
 	}
 
     /**
-     * @static
+     * Сохрание сущности в файл со слиянием
+     *
      * @param EntityMeta $entity
      * @param string $path
      * @return void
@@ -175,7 +206,8 @@ class EntityMetaManager implements IEntityMetaManager
             $classRef = new Zend_Reflection_Class($entity->name);
 
             $str = "<?php\n";
-            $str .= $classRef->getDocComment() . "\n\n";
+
+            $str .= $entity->comment . "\n\n";
 		    $str .= self::getStrClassDeclaration($classRef);
 
 		    $str .= "\n{\n";
@@ -186,16 +218,14 @@ class EntityMetaManager implements IEntityMetaManager
             /** @var $p Zend_Reflection_Property */
             foreach ($classRef->getProperties() as $p)
             {
-                // поле исходной сущности
+	            //пропускаем унаследованные
+	            if ($p->getDeclaringClass()->getName() != $classRef->getName())
+		            continue;
+
+	            // поле исходной сущности
                 $fieldSource = self::getFieldByName($entity, $p->getName());
 
-//                var_dump($p->getName());
-//                var_dump($fieldSource);
-//
-//                echo "\n\n*****\n\n";
-
-                //найдены одинаковые поля, сравниваем,
-                //если различны перезаписывает из исходной сущности
+                //найдены поля с одинаковыми названиями, сравниваем, показываем разницу, берем из источника
                 if (!is_null($fieldSource))
                 {
                     // поле сущности из файла
@@ -204,10 +234,7 @@ class EntityMetaManager implements IEntityMetaManager
                     //пробежим по атрибутам поля источника
                     foreach ($fieldSource as $fieldAtribName => $fieldAtribVal)
                     {
-                        //echo printf("%s -> %s\n", $fieldAtribName, $fieldAtribVal);
-                        //print "$fieldAtribName =>". (boolean)$fieldAtribVal . "\n";
-
-                        //если значение атрибутов различно,пишем значение атрибута на основе шаблона
+                        //если значение атрибутов различно, пишем значение атрибута на основе шаблона
                         if ($fieldAtribVal != $fieldDest->$fieldAtribName)
                         {
                             echo "Field: {$p->getName()}\n";
@@ -217,29 +244,24 @@ class EntityMetaManager implements IEntityMetaManager
                         }
                     }
 
+	                $type = preg_replace('/\(.*\).*/', "", $fieldSource->type);
+					$replaceMapFileld =  array(
+						"{COMMENT}"           => $fieldSource->comment,
+						"{TYPE}"              => self::recognizeDbType($type),
+						"{COLUMN_ANNOTATION}" => self::PHPDOC_TAG_COLUMN . ".....",
+						"{COLUMN_NAME}"       => $fieldSource->name,
+						"{DEFAULT_VALUE}"     => self::getVal($fieldSource->default)
+					);
 
-
-                    /*
-                    $type = preg_replace('/\(.*\)/', "", $f->type);
-                    $replaceMapFileld =  array
-                    (
-                        "{COMMENT}"           => $f->comment,
-                        "{TYPE}"              => self::recognizeDbType($type),
-                        "{COLUMN_ANNOTATION}" => self::PHPDOC_TAG_COLUMN . ".....",
-                        "{COLUMN_NAME}"       => $f->name,
-                        "{DEFAULT_VALUE}"     => $f->default
-                    );
-
-                    $fieldsStr .= str_replace(
-                        array_keys($replaceMapFileld),
-                        array_values($replaceMapFileld),
-                        file_get_contents($conf->get("fieldTemplate"))
-                    );
-                    */
+	                $str .= str_replace(
+						array_keys($replaceMapFileld),
+						array_values($replaceMapFileld),
+						file_get_contents(self::$config->get("fieldTemplate"))
+					);
                 }
                 else
                 {
-                   /*
+
                     $str .= self::INDENT;
                     $str .= $p->getDocComment()->getContents() . "\n";
                     $str .= self::INDENT;
@@ -250,33 +272,62 @@ class EntityMetaManager implements IEntityMetaManager
                     $val = $p->isStatic() ? $p->getValue($p) : $defaultProps[$p->getName()];
                     $str .= "$" . $p->getName() . " = " . self::getVal($val) . ";";
                     $str .= "\n\n";
-                   */
                 }
-
             }
 
-		    //$str .= self::getStrProperties($classRef);
+	        //todo: добавить поля сущности которых нет в файле
 
+		    $str .= self::getStrConstants($classRef);
+		    $str .= self::getStrMethods($classRef);
 
-		    //$str .= self::getStrConstants($classRef);
-		    //$str .= self::getStrMethods($classRef);
-
-		    //$str .= "}";
-		    //$str .= "\n>";
+		    $str .= "}";
+		    $str .= "\n?>";
 
 		    //file_put_contents($path, $str);
-
         }
+		else
+		{
+			//создаем новый на основе шаблона
+			$fieldsStr = "";
 
+			foreach ($entity->fields as $f)
+			{
+				$type = preg_replace('/\(.*\).*/', "", $f->type);
+				$replaceMapFileld = array(
+					"{COMMENT}"           => $f->comment,
+					"{TYPE}"              => self::recognizeDbType($type),
+					"{COLUMN_ANNOTATION}" => self::PHPDOC_TAG_COLUMN . ".....",
+					"{COLUMN_NAME}"       => $f->name,
+					"{DEFAULT_VALUE}"     => self::getVal($f->default)
+				);
 
-        //if file exist
-            //read file to reflection
-            //if class found
-                //search class fields not found in entity
-                //export
-        //else
-            //insert variables in templates
-            //put new file
+				$fieldsStr .= str_replace(
+					array_keys($replaceMapFileld),
+					array_values($replaceMapFileld),
+					file_get_contents(self::$config->get("fieldTemplate"))
+				);
+				$fieldsStr .= "";
+			}
+			$replaceMapClass = array (
+				"{ENTITY_COMMENT}"   => $entity->comment,
+				"{AUTHOR}"           => "Eugene Kurbatov",
+				"{ENTITY_NAME}"      => $entity->name,
+				"{ENTITY_TABLE}"     => lcfirst($entity->name),
+				"{PRIMARY_KEY}"      => "id",
+				"{FIELDS}"           => $fieldsStr,
+				"{FIELDS_LIST}"      => "//fields"
+			);
+
+			$str = str_replace(
+				array_keys($replaceMapClass),
+				array_values($replaceMapClass),
+				file_get_contents(self::$config->get("entityTemplate"))
+			);
+
+		}
+
+		echo iconv("utf-8", "windows-1251", $str);
+
 
 	}
 

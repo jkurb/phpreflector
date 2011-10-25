@@ -1,6 +1,6 @@
-    /**
+  /**
 	 * {COMMENT}
-     *
+   *
  	 * @var {TYPE}
  	 * {COLUMN_ANNOTATION}
  	 */

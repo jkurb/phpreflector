@@ -12,9 +12,9 @@ interface IEntityMetaManager
 {
 	public static function createFromFile($path, $classname);
 
-	public static function createFromTable($config, $tbname);
+	public static function createFromTable($tbname);
 
-	public static function saveToTable($config, $tbname);
+	public static function saveToTable($tbname);
 
 	public static function saveToFile($path, $classname);
 }
