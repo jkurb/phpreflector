@@ -88,7 +88,7 @@ class Field
      *
      * @param $p Zend_Reflection_Property Поле класса
      * @param $defaultProps array Дефолтные значения полей класса
-     * @return DbField
+     * @return Field
      */
 	public static function extract($p, $defaultProps)
 	{

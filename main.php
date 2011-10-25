@@ -12,7 +12,7 @@ set_include_path(get_include_path() . PATH_SEPARATOR .
     realpath(dirname(__FILE__)) . "/include");
 
 
-require_once "include/ClassReflector.php";
+require_once "include/EntityMetaManager.php";
 
 
 /**
@@ -23,7 +23,10 @@ require_once "include/ClassReflector.php";
  * @column name="myfield", type="varchar(256)", unique=false, nullable=false
  */
 
-$clsRef = EntityMetaManager::createFromTable(require "config.php", "user");
+$ent = EntityMetaManager::createFromTable(require "config.php", "user");
+
+EntityMetaManager::saveToFile($ent, "tests/fixtures/User.php");
+
 
 //$clsRef = ClassReflector::createFromFile("tests/fixtures/User.php", "User");
 

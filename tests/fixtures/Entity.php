@@ -22,7 +22,7 @@ abstract class Entity
 	public $entityTable = null;
 
 	/**
-	 * У каждой сущности должен быть идентификатор. Является атрибутом сущности и д.б. объявлен в getFields()
+	 * Id сущности
 	 *
 	 * @column id
 	 * @var integer

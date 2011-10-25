@@ -30,7 +30,7 @@ class User extends Entity
 	 * Пароль пользователя
 	 *
      * @var string
-	 * @column type="varchar(256)", allowNull=false
+	 * @column type="varchar(255)", allowNull=false
 	 */
 	public $password;
 
@@ -38,7 +38,7 @@ class User extends Entity
 	 * Email пользователя
 	 *
      * @var string
-	 * @column type="varchar(256)", allowNull=false
+	 * @column type="varchar(255)", allowNull=false
 	 */
 	public $email = null;
 
@@ -46,7 +46,7 @@ class User extends Entity
 	 * Номер сотового телефона
 	 *
      * @var string
-	 * @column type="varchar(256)", allowNull=false
+	 * @column type="varchar(255)", allowNull=false
 	 */
 	public $cellPhone = null;
 
@@ -54,7 +54,7 @@ class User extends Entity
 	 * Статус пользователя
 	 *
      * @var string
-	 * @column type="varchar(64)", allowNull=false
+	 * @column type="varchar(50)", allowNull=false
 	 */
 	public $status = 1;
 

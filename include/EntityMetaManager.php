@@ -8,7 +8,7 @@
  * @author   Eugene Kurbatov <ekur@i-loto.ru>
  */
 
-require_once "IClassReflector.php";
+require_once "IEntityMetaManager.php";
 require_once "EntityMeta.php";
 
 require_once "Zend/Reflection/Class.php";
@@ -168,7 +168,7 @@ class EntityMetaManager implements IEntityMetaManager
      */
 	public static function saveToFile($entity, $path)
 	{
-        //выполним слияние
+        //файл найден, выполним слияние
         if (is_file($path))
         {
             require_once $path;
@@ -180,34 +180,46 @@ class EntityMetaManager implements IEntityMetaManager
 
 		    $str .= "\n{\n";
 
-            //пишем поля класса
-
 		    $defaultProps = $classRef->getDefaultProperties();
 
-            //ищем одинаковые
+            //пробежимся по полям сущности
             /** @var $p Zend_Reflection_Property */
             foreach ($classRef->getProperties() as $p)
             {
+                // поле исходной сущности
                 $fieldSource = self::getFieldByName($entity, $p->getName());
-                //найдены одинаковые поля, сравниваем, если различны перезаписывает из сущности
+
+//                var_dump($p->getName());
+//                var_dump($fieldSource);
+//
+//                echo "\n\n*****\n\n";
+
+                //найдены одинаковые поля, сравниваем,
+                //если различны перезаписывает из исходной сущности
                 if (!is_null($fieldSource))
                 {
+                    // поле сущности из файла
                     $fieldDest = Field::extract($p, $defaultProps);
 
                     //пробежим по атрибутам поля источника
-                    foreach ($fieldSource as $fieldAtrib)
+                    foreach ($fieldSource as $fieldAtribName => $fieldAtribVal)
                     {
-                        //если значение атрибутов различно,
-                        //пишем поле на основе шаблона
-                        if ()
+                        //echo printf("%s -> %s\n", $fieldAtribName, $fieldAtribVal);
+                        //print "$fieldAtribName =>". (boolean)$fieldAtribVal . "\n";
+
+                        //если значение атрибутов различно,пишем значение атрибута на основе шаблона
+                        if ($fieldAtribVal != $fieldDest->$fieldAtribName)
+                        {
+                            echo "Field: {$p->getName()}\n";
+                            echo "Atrrib: {$fieldAtribName}\n";
+                            echo "Source val: {$fieldAtribVal}\n";
+                            echo "Dest val: {$fieldDest->$fieldAtribName}\n\n\n";
+                        }
                     }
 
 
 
-
-
-
-
+                    /*
                     $type = preg_replace('/\(.*\)/', "", $f->type);
                     $replaceMapFileld =  array
                     (
@@ -223,9 +235,11 @@ class EntityMetaManager implements IEntityMetaManager
                         array_values($replaceMapFileld),
                         file_get_contents($conf->get("fieldTemplate"))
                     );
+                    */
                 }
                 else
                 {
+                   /*
                     $str .= self::INDENT;
                     $str .= $p->getDocComment()->getContents() . "\n";
                     $str .= self::INDENT;
@@ -236,6 +250,7 @@ class EntityMetaManager implements IEntityMetaManager
                     $val = $p->isStatic() ? $p->getValue($p) : $defaultProps[$p->getName()];
                     $str .= "$" . $p->getName() . " = " . self::getVal($val) . ";";
                     $str .= "\n\n";
+                   */
                 }
 
             }
@@ -243,14 +258,13 @@ class EntityMetaManager implements IEntityMetaManager
 		    //$str .= self::getStrProperties($classRef);
 
 
+		    //$str .= self::getStrConstants($classRef);
+		    //$str .= self::getStrMethods($classRef);
 
-		    $str .= self::getStrConstants($classRef);
-		    $str .= self::getStrMethods($classRef);
+		    //$str .= "}";
+		    //$str .= "\n>";
 
-		    $str .= "}";
-		    $str .= "\n>";
-
-		    file_put_contents($path, $str);
+		    //file_put_contents($path, $str);
 
         }
 
@@ -278,7 +292,7 @@ class EntityMetaManager implements IEntityMetaManager
         {
             if ($f->name == $name)
             {
-                return $f->name;
+                return $f;
             }
         }
 
@@ -402,7 +416,7 @@ class EntityMetaManager implements IEntityMetaManager
 			if (!key_exists($cName, $parentConsts))
 			{
 				$str .= self::INDENT . "const ";
-				$str .= $cName . " = " . $this->getVal($cVal) . ";";
+				$str .= $cName . " = " . self::getVal($cVal) . ";";
 				$str .= "\n\n";
 			}
 		}
@@ -441,7 +455,7 @@ class EntityMetaManager implements IEntityMetaManager
 						$delim = "";
 
 					$str .= "$" . $p->getName() . $delim .
-						($p->isOptional() ? " = " . $this->getVal($p->getDefaultValue()) : "");
+						($p->isOptional() ? " = " . self::getVal($p->getDefaultValue()) : "");
 				}
 
 				$str .= ")";
