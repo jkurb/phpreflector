@@ -28,7 +28,7 @@ EntityMetaManager::init(require_once "config.php");
 
 $ent = EntityMetaManager::createFromTable("user");
 
-EntityMetaManager::saveToFile($ent, "tests/fixtures/User.php");
+EntityMetaManager::mergeAndSaveToFile($ent, "tests/fixtures/User.php");
 
 
 //$clsRef = ClassReflector::createFromFile("tests/fixtures/User.php", "User");

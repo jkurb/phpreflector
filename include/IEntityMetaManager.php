@@ -16,5 +16,5 @@ interface IEntityMetaManager
 
 	public static function saveToTable($tbname);
 
-	public static function saveToFile($path, $classname);
+	public static function mergeAndSaveToFile($path, $classname);
 }

@@ -60,7 +60,6 @@ class DbColomnParamsTest extends PHPUnit_Framework_TestCase
 
 	    $p = Field::extract('id');
 	    $this->assertEquals(true, $p->isId);
-
     }
 
    /**

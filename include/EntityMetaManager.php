@@ -70,7 +70,7 @@ class EntityMetaManager implements IEntityMetaManager
 	/**
 	 * Создание мета-сущности из таблицы
 	 *
-	 * @param $tblName
+	 * @param $tblName Имя таблицы
 	 * @return EntityMeta
 	 */
 	public static function createFromTable($tblName)
@@ -86,7 +86,7 @@ class EntityMetaManager implements IEntityMetaManager
         $entityMeta->comment = $tableMeta[$tblName]["Comment"];
         $entityMeta->name = ucfirst($tblName);
 
-        $fieldsMeta = $db->fetchAssoc("SHOW FULL COLUMNS FROM {$tblName}");        ;
+        $fieldsMeta = $db->fetchAssoc("SHOW FULL COLUMNS FROM {$tblName}");
 
         foreach ($fieldsMeta as $f)
         {
@@ -197,7 +197,7 @@ class EntityMetaManager implements IEntityMetaManager
      * @param string $path
      * @return void
      */
-	public static function saveToFile($entity, $path)
+	public static function mergeAndSaveToFile($entity, $path)
 	{
         //файл найден, выполним слияние
         if (is_file($path))
@@ -245,7 +245,7 @@ class EntityMetaManager implements IEntityMetaManager
                     }
 
 	                $type = preg_replace('/\(.*\).*/', "", $fieldSource->type);
-					$replaceMapFileld =  array(
+					$replaceMapFileld = array(
 						"{COMMENT}"           => $fieldSource->comment,
 						"{TYPE}"              => self::recognizeDbType($type),
 						"{COLUMN_ANNOTATION}" => self::PHPDOC_TAG_COLUMN . ".....",
@@ -287,51 +287,58 @@ class EntityMetaManager implements IEntityMetaManager
         }
 		else
 		{
-			//создаем новый на основе шаблона
-			$fieldsStr = "";
-
-			foreach ($entity->fields as $f)
-			{
-				$type = preg_replace('/\(.*\).*/', "", $f->type);
-				$replaceMapFileld = array(
-					"{COMMENT}"           => $f->comment,
-					"{TYPE}"              => self::recognizeDbType($type),
-					"{COLUMN_ANNOTATION}" => self::PHPDOC_TAG_COLUMN . ".....",
-					"{COLUMN_NAME}"       => $f->name,
-					"{DEFAULT_VALUE}"     => self::getVal($f->default)
-				);
-
-				$fieldsStr .= str_replace(
-					array_keys($replaceMapFileld),
-					array_values($replaceMapFileld),
-					file_get_contents(self::$config->get("fieldTemplate"))
-				);
-				$fieldsStr .= "";
-			}
-			$replaceMapClass = array (
-				"{ENTITY_COMMENT}"   => $entity->comment,
-				"{AUTHOR}"           => "Eugene Kurbatov",
-				"{ENTITY_NAME}"      => $entity->name,
-				"{ENTITY_TABLE}"     => lcfirst($entity->name),
-				"{PRIMARY_KEY}"      => "id",
-				"{FIELDS}"           => $fieldsStr,
-				"{FIELDS_LIST}"      => "//fields"
-			);
-
-			$str = str_replace(
-				array_keys($replaceMapClass),
-				array_values($replaceMapClass),
-				file_get_contents(self::$config->get("entityTemplate"))
-			);
-
+			$str = self::createClassFileByTemplate($entity);
 		}
 
-		echo iconv("utf-8", "windows-1251", $str);
+		//echo iconv("utf-8", "windows-1251", $str);
+		echo "$str\n";
+
 
 
 	}
 
-    /**
+	//создаем новый на основе шаблона
+	private static function createClassFileByTemplate($entity)
+	{
+		$fieldsStr = "";
+
+		foreach ($entity->fields as $f)
+		{
+			$type = preg_replace('/\(.*\).*/', "", $f->type);
+			$replaceMapFileld = array(
+				"{COMMENT}" => $f->comment,
+				"{TYPE}" => self::recognizeDbType($type),
+				"{COLUMN_ANNOTATION}" => self::PHPDOC_TAG_COLUMN . ".....",
+				"{COLUMN_NAME}" => $f->name,
+				"{DEFAULT_VALUE}" => self::getVal($f->default)
+			);
+
+			$fieldsStr .= str_replace(
+				array_keys($replaceMapFileld),
+				array_values($replaceMapFileld),
+				file_get_contents(self::$config->get("fieldTemplate"))
+			);
+			$fieldsStr .= "";
+		}
+		$replaceMapClass = array(
+			"{ENTITY_COMMENT}" => $entity->comment,
+			"{AUTHOR}" => "Eugene Kurbatov",
+			"{ENTITY_NAME}" => $entity->name,
+			"{ENTITY_TABLE}" => lcfirst($entity->name),
+			"{PRIMARY_KEY}" => "id",
+			"{FIELDS}" => $fieldsStr,
+			"{FIELDS_LIST}" => "//fields"
+		);
+
+		$str = str_replace(
+			array_keys($replaceMapClass),
+			array_values($replaceMapClass),
+			file_get_contents(self::$config->get("entityTemplate"))
+		);
+		return $str;
+	}
+
+	/**
      * @static
      * @param EntityMeta $entity
      * @param string $name
