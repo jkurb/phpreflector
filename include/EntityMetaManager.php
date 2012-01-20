@@ -598,7 +598,6 @@ class EntityMetaManager implements IEntityMetaManager
         return $classStr;
     }
 
-
 	private static function recognizeDbType($dbType)
 	{
         switch ($dbType)
