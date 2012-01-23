@@ -36,6 +36,14 @@ abstract class Entity
 	 */
 	public $primaryKey = null;
 
+	/**
+	 * Тестовое поле
+	 *
+	 * @column name="testField", type="varchar(255)", allowNull=true
+	 * @var string
+	 */
+	public $testField = null;
+
 	/** Типы данных, соотсветсвующий типам MYSQL */
 
 	/**

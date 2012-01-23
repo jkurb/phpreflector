@@ -10,11 +10,13 @@
 
 interface IEntityMetaManager
 {
-	public static function createFromFile($path, $classname);
+	public static function createFromFile($path);
 
 	public static function createFromTable($tbname);
 
-	public static function saveToTable($tbname);
+	public static function saveToTable($entityMeta, $tbname);
 
-	public static function mergeAndSaveToFile($path, $classname);
+	public static function saveToFile($entityMeta, $path);
+
+	public static function merge($srcEntityMeta, $destEntityMeta);
 }

@@ -27,6 +27,8 @@
 
 class Field
 {
+	const PHPDOC_TAG_COLUMN = "column";
+
     /**
      * Имя поля
      *
@@ -83,72 +85,109 @@ class Field
      */
     public $isAutoincremented = false;
 
+	public $isStatic = false;
+
+	public $isPublic = false;
+
+	public $isPrivate = false;
+
+	public $isProtected = false;
+
+	public $isColomn = false;
+
+	public $isConstant = false;
+
     /**
-     * Преобразует описание аннотации в объект класса
+     * Создает объект Field c необходимыми полями из ReflectionProperty
      *
-     * @param $p Zend_Reflection_Property Поле класса
-     * @param $defaultProps array Дефолтные значения полей класса
+     * @param $p \TokenReflection\ReflectionProperty
      * @return Field
      */
-	public static function extract($p, $defaultProps)
+	public static function extract($p)
 	{
-		$arr = array();
-		$res = explode(",", $p->getDocComment()->getTag("column")->getDescription());
-		foreach ($res  as $r)
+		$field = new Field();
+		$arrAnnotation = array();
+
+		if ($p->hasAnnotation(self::PHPDOC_TAG_COLUMN))
 		{
-			$pair = explode("=", $r);
-			$name = trim($pair[0]);
-			$value = isset($pair[1]) ? str_replace("\"", "", trim($pair[1])) : null;
-			$arr[$name] = $value;
+			$arrAnnotation = self::readColomnAnnotation($p);
+			$field->isColomn = true;
 		}
 
-		if (!isset($arr["type"]) && !key_exists("id", $arr))
-			throw new RuntimeException("Type/ID is required");
-
-		$field = new Field();
-
-		if (isset($arr["name"]) && !empty($arr["name"]))
+		//Название поля
+		if (isset($arrAnnotation["name"]) && !empty($arrAnnotation["name"]))
         {
-            $field->name = $arr["name"];
+            $field->name = $arrAnnotation["name"];
         }
         else
         {
             $field->name = $p->getName();
         }
 
-        //Задается первичный ключ, автоинкрементный, безнаковый, int(11)
-        if (key_exists("id", $arr))
+        //Задается первичный ключ, автоинкрементный, беззнаковый, int(11)
+        if (key_exists("id", $arrAnnotation))
         {
             $field->isPrimaryKey = true;
             $field->isAutoincremented = true;
             $field->isId = true;
+	        // по умолчанию
             $field->type = "int(11) unsigned";
             $field->allowNull = false;
         }
 
-		if (isset($arr["type"]) && !empty($arr["type"]))
+		//Тип данных; переопределяем
+		if (isset($arrAnnotation["type"]) && !empty($arrAnnotation["type"]))
         {
-            $field->type = $arr["type"];
+            $field->type = $arrAnnotation["type"];
         }
 
-		if (isset($arr["allowNull"]) && self::isBool($arr["allowNull"]))
+		if (isset($arrAnnotation["allowNull"]) && self::isBool($arrAnnotation["allowNull"]))
         {
-            $field->allowNull = self::getBool($arr["allowNull"]);
+            $field->allowNull = self::getBool($arrAnnotation["allowNull"]);
         }
 
-        if (isset($arr["default"]) && !empty($arr["default"]))
+		//Значение по умолчанию
+        if (isset($arrAnnotation["default"]) && !empty($arrAnnotation["default"]))
         {
-			$field->default = $arr["default"];
+			$field->default = $arrAnnotation["default"];
         }
         else
         {
+	        $defaultProps = $p->getDeclaringClass()->getDefaultProperties();
             $val = $p->isStatic() ? $p->getValue($p) : $defaultProps[$p->getName()];
             $field->default = $val;
         }
 
-        $field->comment = $p->getDocComment()->getShortDescription();
+        $field->comment = $p->getAnnotation(\TokenReflection\ReflectionAnnotation::SHORT_DESCRIPTION);
+
+		$field->isPrivate = $p->isPrivate();
+		$field->isPublic = $p->isPublic();
+		$field->isProtected = $p->isProtected();
+		$field->isStatic = $p->isStatic();
 
 		return $field;
+	}
+
+	/**
+	 * Возвращает асоциативный массив; ключи соответсвуют полям класса
+	 *
+	 * @static
+	 * @param $p \TokenReflection\ReflectionProperty
+	 * @return array
+	 */
+	private static function readColomnAnnotation($p)
+	{
+		$arrAnnotations = array();
+		$ann = $p->getAnnotation(self::PHPDOC_TAG_COLUMN);
+		$res = explode(",", $ann[0]);
+		foreach ($res as $r)
+		{
+			$pairKeyVal = explode("=", $r);
+			$name = trim($pairKeyVal[0]);
+			$value = isset($pairKeyVal[1]) ? str_replace("\"", "", trim($pairKeyVal[1])) : null;
+			$arrAnnotations[$name] = $value;
+		}
+		return $arrAnnotations;
 	}
 
 	private static function isBool($val)
@@ -160,12 +199,4 @@ class Field
 	{
 		return $str == "true";
 	}
-
-    public function getColumnAnnotation()
-    {
-        $s = "@column";
-
-		//todo: inmplement
-
-    }
 }

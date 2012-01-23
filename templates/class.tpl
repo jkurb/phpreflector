@@ -4,7 +4,7 @@
  * PHP version 5
  *
  * @package Entity
- * @author  {AUTHOR}
+ * @author  {CUSTOM_AUTHOR}
  */
 
 class {ENTITY_NAME} extends Entity
@@ -14,16 +14,18 @@ class {ENTITY_NAME} extends Entity
 	 *
 	 * @var string
 	 */
-	public $entityTable = "{ENTITY_TABLE}";
+	public $entityTable = "{CUSTOM_ENTITY_TABLE}";
 
 	/**
 	 * Первичный ключ, обычно соответствует атрибуту "id".  Не является атрибутом сущности.
 	 *
 	 * @var string
 	 */
-	public $primaryKey = "{PRIMARY_KEY}";
+	public $primaryKey = "{CUSTOM_PRIMARY_KEY}";
 
-{FIELDS}
+{ENTITY_CONSTANTS}
+
+{ENTITY_FIELDS}
 
 	/**
 	 * Возвращает список полей сущности и их типы
@@ -33,10 +35,10 @@ class {ENTITY_NAME} extends Entity
 	public function getFields()
 	{
 		return array(
-{FIELDS_LIST}
+{CUSTOM_FIELDS_LIST}
 		);
 	}
 
-{METHODS}
+{ENTITY_METHODS}
 
 }

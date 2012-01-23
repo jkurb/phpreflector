@@ -8,6 +8,7 @@
  * @author   Eugene Kurbatov <ekur@i-loto.ru>
  */
 
+
 require_once "IEntityMetaManager.php";
 require_once "EntityMeta.php";
 
@@ -18,7 +19,6 @@ require_once "Zend/Db.php";
 
 class EntityMetaManager implements IEntityMetaManager
 {
-	const PHPDOC_TAG_COLUMN = "column";
     const INDENT = "\t";
 
 	/**
@@ -42,26 +42,45 @@ class EntityMetaManager implements IEntityMetaManager
 	 * Создание мета-сущности из файла
 	 *
 	 * @param $path
-	 * @param $classname
 	 * @return EntityMeta
 	 */
-	public static function createFromFile($path, $classname)
+	public static function createFromFile($path)
 	{
-		require_once $path;
-        $refClass = new Zend_Reflection_Class($classname);
+		$dirname = dirname($path);
+		$classname = basename($path, ".php");
+
+		$broker = new TokenReflection\Broker(new TokenReflection\Broker\Backend\Memory());
+		$broker->processDirectory($dirname);
+
+		$refClass = $broker->getClass($classname);
 
         $entityMeta = new EntityMeta();
         $entityMeta->name = $classname;
-        $entityMeta->comment = $refClass->getDocblock()->getShortDescription();
 
-		/** @var $p Zend_Reflection_Property */
-		foreach ($refClass->getProperties() as $p)
+		$annotations = $refClass->getAnnotations();
+        $entityMeta->comment = $annotations[\TokenReflection\ReflectionAnnotation::SHORT_DESCRIPTION];
+
+		/** @var $c \TokenReflection\ReflectionConstant */
+		foreach ($refClass->getOwnConstantReflections() as $c)
 		{
-            if (!$p->getDocComment()->hasTag(self::PHPDOC_TAG_COLUMN))
-                continue;
+			$field = new Field();
+			$field->name = $c->getName();
+			$field->default = $c->getValue();
+			$field->isConstant = true;
+			$entityMeta->constants[] = $field;
+		}
 
+		/** @var $p \TokenReflection\ReflectionProperty */
+		foreach ($refClass->getOwnProperties() as $p)
+		{
             $field = Field::extract($p, $refClass->getDefaultProperties());
             $entityMeta->fields[] = $field;
+		}
+
+		/** @var $m \TokenReflection\ReflectionMethod */
+		foreach ($refClass->getOwnMethods() as $m)
+		{
+			$entityMeta->strMethods .= $m->getSource();
 		}
 
         return $entityMeta;
@@ -112,7 +131,7 @@ class EntityMetaManager implements IEntityMetaManager
 	}
 
 
-	public static function saveToTable($tbname)
+	public static function saveToTable($entityMeta, $tbname)
 	{
 
 //		$conf = new Zend_Config($config);
@@ -623,5 +642,16 @@ class EntityMetaManager implements IEntityMetaManager
             default:
                 throw new Exception("Undefined type '{$dbType}'") ;
         }
+	}
+
+
+	public static function merge($srcEntityMeta, $destEntityMeta)
+	{
+		// TODO: Implement merge() method.
+	}
+
+	public static function saveToFile($entityMeta, $path)
+	{
+
 	}
 }

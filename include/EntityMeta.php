@@ -29,4 +29,16 @@ class EntityMeta
      * @var Field[]
      */
     public $fields = array();
+
+	/**
+     * @var Field[]
+     */
+    public $constants = array();
+
+	/**
+	 * Методы класса
+	 *
+	 * @var string
+	 */
+	public $strMethods = null;
 }

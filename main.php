@@ -1,40 +1,29 @@
 <?php
-/**
- * Точка входа
- *
- * PHP version 5
- *
- * @package
- * @author   Eugene Kurbatov <ekur@i-loto.ru>
- */
+
+namespace TokenReflection;
 
 set_include_path(get_include_path() . PATH_SEPARATOR .
     realpath(dirname(__FILE__)) . "/include");
 
-
-require_once "include/EntityMetaManager.php";
-
-
-/**
- * @column id
- * @column id, type="int(10)", unsigned=true
- * @column type="varchar(256)", unique=false, nullable=false
- * @column type="datetime", allowNull=true, default="val"
- * @column name="myfield", type="varchar(256)", unique=false, nullable=false
- */
+// Autoload
+spl_autoload_register(function($className) {
+	$file = strtr($className, '\\_', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR) . '.php';
+	if (!function_exists('stream_resolve_include_path') || false !== stream_resolve_include_path($file)) {
+		require_once $file;
+	}
+});
 
 
-EntityMetaManager::init(require_once "config.php");
 
-$ent = EntityMetaManager::createFromTable("user");
+$broker = new Broker(new Broker\Backend\Memory());
+$broker->processDirectory("tests/fixtures");
 
-EntityMetaManager::mergeAndSaveToFile($ent, "tests/fixtures/User.php");
+$class = $broker->getClass("Entity");
 
-
-//$clsRef = ClassReflector::createFromFile("tests/fixtures/User.php", "User");
-
-//$clsRef->reflectToFile("res/CopyUser.php", "CopyUser");
-
-//$clsRef->reflectToTable(require "config.php", "user");
+$r = $class->getOwnProperties();
 
 
+foreach ($r as $p)
+{
+	var_dump($p->getName());
+}
