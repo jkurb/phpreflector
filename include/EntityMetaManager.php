@@ -652,6 +652,6 @@ class EntityMetaManager implements IEntityMetaManager
 
 	public static function saveToFile($entityMeta, $path)
 	{
-
+		//обработка шаблона
 	}
 }

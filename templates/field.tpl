@@ -1,8 +1,8 @@
    /**
-	* {COMMENT}
+	* {FIELD_COMMENT}
 	*
-	* @var {TYPE}
-	* {COLUMN_ANNOTATION}
+	* @var {FIELD_TYPE}
+	* {FIELD_COLUMN_ANNOTATION}
 	*/
-	public ${COLUMN_NAME} = {DEFAULT_VALUE};
+	public ${FIELD_COLUMN_NAME} = {FIELD_DEFAULT_VALUE};
 
