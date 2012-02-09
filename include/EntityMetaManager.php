@@ -17,6 +17,11 @@ require_once "Zend/Reflection/File.php";
 require_once "Zend/Config.php";
 require_once "Zend/Db.php";
 
+use TokenReflection\ReflectionAnnotation;
+use TokenReflection\Broker;
+use TokenReflection\Broker\Backend;
+use TokenReflection\Broker\Backend\Memory;
+
 class EntityMetaManager implements IEntityMetaManager
 {
     const INDENT = "\t";
@@ -41,7 +46,8 @@ class EntityMetaManager implements IEntityMetaManager
 	/**
 	 * Создание мета-сущности из файла
 	 *
-	 * @param $path
+	 * @param $path string Путь к файлу класса
+	 *
 	 * @return EntityMeta
 	 */
 	public static function createFromFile($path)
@@ -49,7 +55,7 @@ class EntityMetaManager implements IEntityMetaManager
 		$dirname = dirname($path);
 		$classname = basename($path, ".php");
 
-		$broker = new TokenReflection\Broker(new TokenReflection\Broker\Backend\Memory());
+		$broker = new Broker(new Memory());
 		$broker->processDirectory($dirname);
 
 		$refClass = $broker->getClass($classname);
@@ -58,7 +64,7 @@ class EntityMetaManager implements IEntityMetaManager
         $entityMeta->name = $classname;
 
 		$annotations = $refClass->getAnnotations();
-        $entityMeta->comment = $annotations[\TokenReflection\ReflectionAnnotation::SHORT_DESCRIPTION];
+        $entityMeta->comment = $annotations[ReflectionAnnotation::SHORT_DESCRIPTION];
 
 		/** @var $c \TokenReflection\ReflectionConstant */
 		foreach ($refClass->getOwnConstantReflections() as $c)
@@ -89,7 +95,8 @@ class EntityMetaManager implements IEntityMetaManager
 	/**
 	 * Создание мета-сущности из таблицы
 	 *
-	 * @param $tblName Имя таблицы
+	 * @param $tblName string Имя таблицы
+	 *
 	 * @return EntityMeta
 	 */
 	public static function createFromTable($tblName)
@@ -123,6 +130,8 @@ class EntityMetaManager implements IEntityMetaManager
             $field->comment = $f["Comment"];
             $field->allowNull = ($f["Null"] == "YES");
             $field->isAutoincremented = ($f["Extra"] == "auto_increment");
+	        $field->isColomn = true;
+	        $field->isPublic = true;
 
             $entityMeta->fields[] = $field;
         }
@@ -131,82 +140,47 @@ class EntityMetaManager implements IEntityMetaManager
 	}
 
 
+	/**
+	 * Сохранение сущностив таблицу БД
+	 *
+	 * @param $entityMeta EntityMeta Объект мета-сущности
+	 * @param $tbname string Имя таблицы
+	 *
+	 * @return void
+	 */
 	public static function saveToTable($entityMeta, $tbname)
 	{
+		$db = Zend_Db::factory(self::$config->get("database"));
+		$db->getConnection();
 
-//		$conf = new Zend_Config($config);
-//
-//		$db = Zend_Db::factory($conf->database);
-//
-//		$db->getConnection();
-//
-//		$sqlBegin = "CREATE TABLE {$tbname} (";
-//		$sql = "";
-//
-//		$defaultProps = $this->classRef->getDefaultProperties();
-//
-//		//todo: check id exist
-//
-//		/** @var $p Zend_Reflection_Property */
-//		foreach ($this->classRef->getProperties() as $p)
-//		{
-//			if (!$p->getDocComment()->hasTag(self::PHPDOC_TAG_COLUMN))
-//				continue;
-//
-//			$tagDesc = $p->getDocComment()->getTag(self::PHPDOC_TAG_COLUMN)->getDescription();
-//			$columnParams = Field::extract($tagDesc);
-//
-//			if ($columnParams->isId)
-//			{
-//				$columnParams->allowNull = false;
-//				$columnParams->isUnsigned = true;
-//				$columnParams->type = "int(11)";
-//				$columnParams->isAutoIncremented = true;
-//			}
-//
-// 			$comment = trim($p->getDocComment()->getShortDescription());
-//			$val = $p->isStatic() ? $p->getValue($p) : $defaultProps[$p->getName()];
-//			$fieldName = isset($columnParams->name) ? $columnParams->name : $p->getName();
-//			$options = "";
-//
-//			if ($columnParams->isUnsigned)
-//			{
-//				$options .= "UNSIGNED";
-//			}
-//
-//			if ($columnParams->allowNull)
-//			{
-//				$options .= " DEFAULT NULL";
-//			}
-//			else
-//			{
-//				$options .= " NOT NULL";
-//				if (!is_null($val))
-//					$options .= " DEFAULT '{$val}'";
-//			}
-//
-//			if ($columnParams->isAutoIncremented)
-//			{
-//				$options .= " AUTO_INCREMENT";
-//			}
-//
-//			//id ever first
-//			if ($columnParams->isId)
-//			{
-//				$sql = "{$fieldName} {$columnParams->type} {$options} COMMENT '{$comment}', " . $sql;
-//			}
-//			else
-//			{
-//				$sql .= "{$fieldName} {$columnParams->type} {$options} COMMENT '{$comment}', ";
-//			}
-//
-//		}
-//		$sqlEnd = "PRIMARY KEY (id)) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_bin;";
-//
-//		echo $sqlBegin .$sql . $sqlEnd;
-//
-//		$db->exec($sqlBegin . $sql . $sqlEnd);
+		$sql = "CREATE TABLE {$entityMeta->name} (";
 
+		foreach ($entityMeta->fields as $field)
+		{
+			$options = "";
+			if ($field->allowNull)
+			{
+				$options .= " DEFAULT NULL";
+			}
+			else
+			{
+				$options .= " NOT NULL";
+				if (!is_null($field->default))
+					$options .= " DEFAULT '{$field->default}'";
+			}
+
+			if ($field->isAutoincremented)
+			{
+				$options .= " AUTO_INCREMENT";
+			}
+
+			$sql .= "{$field->name} {$field->type} {$options} COMMENT '{$field->comment}', ";
+		}
+		$sql .= "PRIMARY KEY (id)) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci COMMENT='{$entityMeta->comment}';";
+
+		echo $sql;
+
+		//$db->exec($sql);
 	}
 
     /**
@@ -400,8 +374,6 @@ class EntityMetaManager implements IEntityMetaManager
 		file_put_contents($path, $str);
 		//echo $str;
     }
-
-
 
     /**
      * @static
