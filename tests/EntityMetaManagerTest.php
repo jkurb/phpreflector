@@ -15,7 +15,6 @@ class EntityMetaManagerTest extends PHPUnit_Framework_TestCase
 {
 	public function __construct()
 	{
-		EntityMetaManager::init(include "../config.php");
 	}
 
 	/**
@@ -36,52 +35,54 @@ class EntityMetaManagerTest extends PHPUnit_Framework_TestCase
 
 	public function testCreateFromFile()
 	{
-		$ent = EntityMetaManager::createFromFile("fixtures/Entity.php");
+		$ent = EntityMetaManager::createFromFile("fixtures/entities/User.php");
 
-		$this->assertEquals("Entity", $ent->name);
-		$this->assertEquals("Базовый класс для всех сущностей", $ent->comment);
-		$this->assertEquals(4, count($ent->fields));
-		$this->assertEquals(6, count($ent->constants));
-		$this->assertEquals("5471d5a458908301b6cc8ef8a2b7183f", md5($ent->strMethods));
+		$this->assertEquals("user", $ent->name);
+		$this->assertEquals("Таблица содержит информацию о типах пользователей Покупатель", $ent->comment);
+		$this->assertEquals(10, count($ent->fields));
+		$this->assertEquals(8, count($ent->constants));
+		$this->assertEquals("d46125e15f318e34f3b10ca73e71db68", md5($ent->strMethods));
 
 		$this->assertEquals("entityTable", $ent->fields[0]->name);
 
 		$this->assertEquals("Содержит наименование таблицы в БД, где хранятся сущности этого типа. Не является атрибутом сущности",
 			$ent->fields[0]->comment);
 
-		$this->assertNull($ent->fields[0]->default);
+		$this->assertEquals("user", $ent->fields[0]->default);
 		$this->assertTrue($ent->fields[0]->allowNull);
 		$this->assertFalse($ent->fields[0]->isColomn);
 		$this->assertNull($ent->fields[0]->type);
 		$this->assertTrue($ent->fields[0]->isPublic);
 
-		$this->assertEquals("int(11) unsigned", $ent->fields[1]->type);
+		$this->assertEquals("int(11) unsigned", $ent->fields[8]->type);
 
-		$this->assertTrue($ent->fields[1]->isColomn);
-		$this->assertTrue($ent->fields[1]->isId);
-		$this->assertTrue($ent->fields[1]->isAutoincremented);
-		$this->assertFalse($ent->fields[1]->allowNull);
+		$this->assertTrue($ent->fields[8]->isColomn);
+		$this->assertTrue($ent->fields[8]->isId);
+		$this->assertTrue($ent->fields[8]->isAutoincremented);
+		$this->assertFalse($ent->fields[8]->allowNull);
+		$this->assertTrue($ent->fields[8]->isInherited);
 
-		$this->assertEquals("testField", $ent->fields[3]->name);
-		$this->assertEquals("Тестовое поле", $ent->fields[3]->comment);
-		$this->assertEquals("varchar(255)", $ent->fields[3]->type);
+		$this->assertEquals("email", $ent->fields[2]->name);
+		$this->assertEquals("Email пользователя", $ent->fields[2]->comment);
+		$this->assertEquals("varchar(255)", $ent->fields[2]->type);
 
-		$this->assertTrue($ent->fields[3]->allowNull);
-		$this->assertTrue($ent->fields[3]->isColomn);
-		$this->assertFalse($ent->fields[3]->isAutoincremented);
+		$this->assertFalse($ent->fields[2]->isInherited);
+		$this->assertTrue($ent->fields[2]->allowNull);
+		$this->assertTrue($ent->fields[2]->isColomn);
+		$this->assertFalse($ent->fields[2]->isAutoincremented);
 	}
 
 	public function testCreateFromTable()
 	{
 		$ent = EntityMetaManager::createFromTable("user");
 
-		$this->assertEquals("User", $ent->name);
+		$this->assertEquals("user", $ent->name);
 		$this->assertEquals("Таблица содержит информацию о типах пользователей Покупатель", $ent->comment);
-		$this->assertEquals(7, count($ent->fields));
+		$this->assertEquals(8, count($ent->fields));
 
 		$this->assertEquals("id", $ent->fields[0]->name);
-		$this->assertEquals("Id пользовтаеля", $ent->fields[0]->comment);
-		$this->assertEquals("int(10)", $ent->fields[0]->type);
+		$this->assertEquals("Id сущности", $ent->fields[0]->comment);
+		$this->assertEquals("int(11) unsigned", $ent->fields[0]->type);
 
 		$this->assertTrue($ent->fields[0]->isId);
 		$this->assertFalse($ent->fields[0]->allowNull);
@@ -104,8 +105,18 @@ class EntityMetaManagerTest extends PHPUnit_Framework_TestCase
 		$this->assertNull($ent->strMethods);
 	}
 
+	public function testSaveToFile()
+	{
+		$ent = EntityMetaManager::createFromTable("user");
+		EntityMetaManager::saveToFile($ent, "fixtures/tmp/User.php");
+
+		$this->assertEquals("7b1d9c615648f0ae63f980d7c6f68da3", md5_file("fixtures/tmp/User.php"));
+	}
+
 	public function testSaveToTable()
 	{
-		//EntityMetaManager::saveToTable();
+		$ent = EntityMetaManager::createFromFile("fixtures/entities/User.php");
+
+		EntityMetaManager::saveToTable($ent, "_user");
 	}
 }

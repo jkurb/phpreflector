@@ -19,7 +19,9 @@ return array(
             "driver_options" => array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8")
         )
     ),
-    "entityTemplate" => "templates/class.tpl",
+    "classTemplate" => realpath(dirname(__FILE__)) . "/templates/class.tpl",
 
-    "fieldTemplate" => "templates/field.tpl"
+    "fieldTemplate" => realpath(dirname(__FILE__)) . "/templates/field.tpl",
+
+	"author" => "Eugene Kurbatov",
 );

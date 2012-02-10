@@ -1,11 +1,11 @@
 <?php
 /**
- * TODO: Добавить здесь комментарий
+ * Обработчик шаблона класса
  *
  * PHP version 5
  *
  * @package
- * @author   Eugene Kurbatov <ekur@i-loto.ru>
+ * @author  Eugene Kurbatov <ekur@i-loto.ru>
  */
 
 class ClassTemplateHandler extends BaseTemplateHandler
@@ -15,60 +15,101 @@ class ClassTemplateHandler extends BaseTemplateHandler
 	 */
 	protected $entity = null;
 
+	/**
+	 * Объект обработчика поля класса
+	 *
+	 * @var FieldTemplateHandler
+	 */
 	protected $fieldTemplateHandler = null;
 
-	public function __construct($filename, $entity)
+	public function __construct($tplClassFilename, $tplFieldFilename, $entity)
 	{
-		parent::__construct($filename);
+		parent::__construct($tplClassFilename);
 		$this->entity = $entity;
+		$this->fieldTemplateHandler = new FieldTemplateHandler($tplFieldFilename);
 	}
 
-	protected function getEntityComment()
+	public function getEntityComment()
 	{
 		return $this->entity->comment;
 	}
 
-	protected function getEntityName()
+	public function getEntityName()
 	{
-		return $this->entity->name;
+		return ucfirst($this->entity->name);
 	}
 
-	protected function getEntityMethods()
+	public function getEntityMethods()
 	{
 		return $this->entity->strMethods;
 	}
 
-
-
-	protected function getEntityConstant()
+	public function getEntityConstants()
 	{
 		$this->entity->constants;
 	}
 
-	protected function getEntityFields()
+	public function getEntityFields()
 	{
-		return $this->entity->fields;
+		$ignoredFields = array("id");
+
+		$fieldsStr = "";
+		foreach ($this->entity->fields as $f)
+		{
+			if (in_array($f->name, $ignoredFields))
+				continue;
+
+			$fieldsStr .= $this->fieldTemplateHandler->process($f);
+		}
+
+		return $fieldsStr;
 	}
 
-
-
-	protected function getCustomFieldList()
+	public function getCustomFieldsList()
 	{
-		return "";
+		$str = "";
+		foreach ($this->entity->fields as $f)
+		{
+			if (!$f->isColomn)
+				continue;
+
+			$str .= "            \"{$f->name}\" => " . $this->recognizeSoloEntityFieldType($f->type) . ",\n";
+		}
+
+		return $str;
 	}
 
-	protected function getCustomPrimaryKey()
+	public function getCustomPrimaryKey()
 	{
 		return "id";
 	}
 
-	protected function getCustomEntityTable()
+	public function getCustomEntityTable()
 	{
 		return strtolower($this->entity->name);
 	}
 
-	protected function getCustomAuthor()
+	public function getCustomAuthor()
 	{
-		return "Eugene Kurbatov";
+		return Config::getInstance()->author;
+	}
+
+	private function recognizeSoloEntityFieldType($dbType)
+	{
+		$typeName = preg_replace("/\\W.*/", "", $dbType);
+
+		switch ($typeName)
+	    {
+	        case "int":	case "tinyint": case "bit": case "float":
+	            return "self::ENTITY_FIELD_INT";
+	        case "decimal":
+		        return "self::ENTITY_FIELD_DECIMAL";
+	        case "char": case "varchar": case "text": case "tinytext": case "mediumtext":
+				return "self::ENTITY_FIELD_STRING";
+	        case "date": case "timestamp": case "datetime":
+				return "self::ENTITY_FIELD_DATETIME";
+	        default:
+	            throw new Exception("Undefined type '{$typeName}'") ;
+	    }
 	}
 }

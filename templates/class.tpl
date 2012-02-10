@@ -24,9 +24,7 @@ class {ENTITY_NAME} extends Entity
 	public $primaryKey = "{CUSTOM_PRIMARY_KEY}";
 
 {ENTITY_CONSTANTS}
-
 {ENTITY_FIELDS}
-
 	/**
 	 * Возвращает список полей сущности и их типы
 	 *

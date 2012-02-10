@@ -13,12 +13,12 @@
  *    name="fileld"
  *
  *    { Тип поля; обязательное, если не задано id }
- *    type="int(11) unsigned",
+ *    type="int(11) unsigned"
  *
  *    { Может ли поле быть NULL }
- *    allowNull=true,
+ *    allowNull="true"
  *
- *    { Значение по умоляанию }
+ *    { Значение по умолчанию }
  *    default="null"
  *
  *    { Задается первичный ключ, автоинкрементный, безнаковый, int(11) }
@@ -85,17 +85,54 @@ class Field
      */
     public $isAutoincremented = false;
 
+	/**
+	 * Является ли статик
+	 *
+	 * @var bool
+	 */
 	public $isStatic = false;
 
+	/**
+	 * Является ли публичным
+	 *
+	 * @var bool
+	 */
 	public $isPublic = false;
 
+	/**
+	 * Является ли приватным
+	 *
+	 * @var bool
+	 */
 	public $isPrivate = false;
 
+	/**
+	 * Является ли защищенным
+	 *
+	 * @var bool
+	 */
 	public $isProtected = false;
 
+	/**
+	 * Является ли полем БД
+	 *
+	 * @var bool
+	 */
 	public $isColomn = false;
 
+	/**
+	 * Является ли константой
+	 *
+	 * @var bool
+	 */
 	public $isConstant = false;
+
+	/**
+	 * Является ли унаследованным
+	 *
+	 * @var bool
+	 */
+	public $isInherited = false;
 
     /**
      * Создает объект Field c необходимыми полями из ReflectionProperty
@@ -199,4 +236,25 @@ class Field
 	{
 		return $str == "true";
 	}
+
+	public function getColumnAnnotation()
+	{
+		$annotation = "@" . self::PHPDOC_TAG_COLUMN;
+
+		if ($this->isId)
+		{
+			$annotation .= " id";
+		}
+		else
+		{
+			$annotation .= " type=\"{$this->type}\", allowNull=\""
+				. ($this->allowNull ? "true" : "false") . "\"";
+
+			if ($this->default)
+				$annotation .= ", default=\"{$this->default}\"";
+		}
+
+		return $annotation;
+	}
+
 }

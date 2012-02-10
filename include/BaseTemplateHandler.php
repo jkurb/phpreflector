@@ -1,6 +1,12 @@
 <?php
 /**
- * TODO: Добавить здесь комментарий
+ * Базовый класс обработчика шаблона
+ * Заменяет в файле шаблоне переменные вида {UPPER_CASE} на значения,
+ * которые возвращают соответсвующие методы подкласса.
+ *
+ * Примеры соответстивй переменной-шаблона и метода:
+ * {MY_VAR} - getMyVar()
+ * {NAME} - getName()
  *
  * PHP version 5
  *
@@ -10,11 +16,16 @@
 
 class BaseTemplateHandler
 {
-	protected $filename = null;
+	/**
+	 * Путь к файлу шаблона
+	 *
+	 * @var null|string
+	 */
+	protected $tplFilename = null;
 
-	public function __construct($filename)
+	public function __construct($tplClassFilename)
 	{
-		$this->filename = $filename;
+		$this->tplFilename = $tplClassFilename;
 	}
 
 	/**
@@ -22,7 +33,7 @@ class BaseTemplateHandler
 	 */
 	public function process()
 	{
-		$content = file_get_contents($this->filename);
+		$content = file_get_contents($this->tplFilename);
 
 		$matches = array();
 		preg_match_all("/{[[:upper:]_]*?}/", $content, $matches);

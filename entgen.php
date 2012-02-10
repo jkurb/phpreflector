@@ -11,6 +11,7 @@
 /**
  * phpgen create --table=tblName
  * phpgen update --table=tblName --class=className
+ * phpgen diff --table=tblName --class=className
  * phpgen help
  */
 
@@ -42,5 +43,4 @@ try
 catch (Exception $e)
 {
     echo "Error: " . $e->getMessage();
-    exit;
 }

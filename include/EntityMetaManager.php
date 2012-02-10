@@ -27,23 +27,6 @@ class EntityMetaManager implements IEntityMetaManager
     const INDENT = "\t";
 
 	/**
-	 * @var Zend_Config
-	 */
-	private static $config = null;
-
-	/**
-	 * Инициализация менеджера
-	 *
-	 * @static
-	 * @param $conf
-	 * @return void
-	 */
-	public static function init($conf)
-	{
-		self::$config = new Zend_Config($conf);
-	}
-
-	/**
 	 * Создание мета-сущности из файла
 	 *
 	 * @param $path string Путь к файлу класса
@@ -61,25 +44,28 @@ class EntityMetaManager implements IEntityMetaManager
 		$refClass = $broker->getClass($classname);
 
         $entityMeta = new EntityMeta();
-        $entityMeta->name = $classname;
+        $entityMeta->name = strtolower($classname);
 
 		$annotations = $refClass->getAnnotations();
         $entityMeta->comment = $annotations[ReflectionAnnotation::SHORT_DESCRIPTION];
 
 		/** @var $c \TokenReflection\ReflectionConstant */
-		foreach ($refClass->getOwnConstantReflections() as $c)
+		foreach ($refClass->getConstantReflections() as $c)
 		{
 			$field = new Field();
 			$field->name = $c->getName();
 			$field->default = $c->getValue();
 			$field->isConstant = true;
+			$field->isInherited = $c->getDeclaringClassName() != $refClass->getName();
+
 			$entityMeta->constants[] = $field;
 		}
 
 		/** @var $p \TokenReflection\ReflectionProperty */
-		foreach ($refClass->getOwnProperties() as $p)
+		foreach ($refClass->getProperties() as $p)
 		{
-            $field = Field::extract($p, $refClass->getDefaultProperties());
+            $field = Field::extract($p);
+			$field->isInherited = $p->getDeclaringClassName() != $refClass->getName();
             $entityMeta->fields[] = $field;
 		}
 
@@ -103,14 +89,14 @@ class EntityMetaManager implements IEntityMetaManager
 	{
         $entityMeta = new EntityMeta();
 
-		$db = Zend_Db::factory(self::$config->get("database"));
+		$db = Zend_Db::factory(Config::getInstance()->database);
 		$db->getConnection();
 
         $tableMeta = $db->fetchAssoc("SHOW TABLE STATUS FROM " .
-            self::$config->database->params->dbname . " WHERE Name = '{$tblName}'");
+            Config::getInstance()->database->params->dbname . " WHERE Name = '{$tblName}'");
 
         $entityMeta->comment = $tableMeta[$tblName]["Comment"];
-        $entityMeta->name = ucfirst($tblName);
+        $entityMeta->name = strtolower($tblName);
 
         $fieldsMeta = $db->fetchAssoc("SHOW FULL COLUMNS FROM {$tblName}");
 
@@ -141,7 +127,7 @@ class EntityMetaManager implements IEntityMetaManager
 
 
 	/**
-	 * Сохранение сущностив таблицу БД
+	 * Сохранение сущности в таблицу БД
 	 *
 	 * @param $entityMeta EntityMeta Объект мета-сущности
 	 * @param $tbname string Имя таблицы
@@ -150,13 +136,17 @@ class EntityMetaManager implements IEntityMetaManager
 	 */
 	public static function saveToTable($entityMeta, $tbname)
 	{
-		$db = Zend_Db::factory(self::$config->get("database"));
+		$db = Zend_Db::factory(Config::getInstance()->database);
 		$db->getConnection();
 
-		$sql = "CREATE TABLE {$entityMeta->name} (";
+		$beginSql = "CREATE TABLE `$tbname` (";
 
+		$sql = "";
 		foreach ($entityMeta->fields as $field)
 		{
+			if (!$field->isColomn)
+				continue;
+
 			$options = "";
 			if ($field->allowNull)
 			{
@@ -166,7 +156,18 @@ class EntityMetaManager implements IEntityMetaManager
 			{
 				$options .= " NOT NULL";
 				if (!is_null($field->default))
-					$options .= " DEFAULT '{$field->default}'";
+				{
+					$options .= " DEFAULT ";
+
+					if ($field->default == "CURRENT_TIMESTAMP")
+					{
+						$options .= "{$field->default}";
+					}
+					else
+					{
+						$options .= "'{$field->default}'";
+					}
+				}
 			}
 
 			if ($field->isAutoincremented)
@@ -174,13 +175,42 @@ class EntityMetaManager implements IEntityMetaManager
 				$options .= " AUTO_INCREMENT";
 			}
 
-			$sql .= "{$field->name} {$field->type} {$options} COMMENT '{$field->comment}', ";
+			if ($field->isId)
+			{
+				$sql = "`{$field->name}` {$field->type} {$options} COMMENT '{$field->comment}', " . $sql;
+			}
+			else
+			{
+				$sql .= "{$field->name} {$field->type} {$options} COMMENT '{$field->comment}', ";
+			}
+
+
 		}
-		$sql .= "PRIMARY KEY (id)) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci COMMENT='{$entityMeta->comment}';";
+		$endSql = "PRIMARY KEY (id)) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci COMMENT='{$entityMeta->comment}';";
 
-		echo $sql;
+		$sql = "{$beginSql}{$sql}{$endSql}";
 
-		//$db->exec($sql);
+		$db->exec($sql);
+	}
+
+	/**
+	 * Сохранение сущности в файл
+	 *
+	 * @param $entityMeta EntityMeta Объект мета-сущности
+	 * @param $path Путь до файла
+	 *
+	 * @return void
+	 */
+	public static function saveToFile($entityMeta, $path)
+	{
+		$classTplHandler = new ClassTemplateHandler(
+			Config::getInstance()->classTemplate,
+			Config::getInstance()->fieldTemplate,
+			$entityMeta
+		);
+
+		$content = "<?php\n". $classTplHandler->process() . "\n?>";
+		file_put_contents($path, $content);
 	}
 
     /**
@@ -290,340 +320,8 @@ class EntityMetaManager implements IEntityMetaManager
 
 	}
 
-	//создаем новый на основе шаблона
-	private static function createClassFileByTemplate($entity)
-	{
-		$fieldsStr = "";
-
-		foreach ($entity->fields as $f)
-		{
-			$type = preg_replace('/\(.*\).*/', "", $f->type);
-			$replaceMapFileld = array(
-				"{COMMENT}" => $f->comment,
-				"{TYPE}" => self::recognizeDbType($type),
-				"{COLUMN_ANNOTATION}" => self::PHPDOC_TAG_COLUMN . ".....",
-				"{COLUMN_NAME}" => $f->name,
-				"{DEFAULT_VALUE}" => self::getVal($f->default)
-			);
-
-			$fieldsStr .= str_replace(
-				array_keys($replaceMapFileld),
-				array_values($replaceMapFileld),
-				file_get_contents(self::$config->get("fieldTemplate"))
-			);
-			$fieldsStr .= "";
-		}
-		$replaceMapClass = array(
-			"{ENTITY_COMMENT}" => $entity->comment,
-			"{AUTHOR}" => "Eugene Kurbatov",
-			"{ENTITY_NAME}" => $entity->name,
-			"{ENTITY_TABLE}" => lcfirst($entity->name),
-			"{PRIMARY_KEY}" => "id",
-			"{FIELDS}" => $fieldsStr,
-			"{FIELDS_LIST}" => "//fields"
-		);
-
-		$str = str_replace(
-			array_keys($replaceMapClass),
-			array_values($replaceMapClass),
-			file_get_contents(self::$config->get("entityTemplate"))
-		);
-		return $str;
-	}
-
-	/**
-     * @static
-     * @param EntityMeta $entity
-     * @param string $name
-     * @return Field
-     */
-    private static function getFieldByName($entity, $name)
-    {
-        foreach ($entity->fields as $f)
-        {
-            if ($f->name == $name)
-            {
-                return $f;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * @static
-     * @param Zend_Reflection_Class $classRef
-     * @param $path
-     * @return void
-     */
-    private static function saveReflectionAsFile($classRef, $path)
-    {
-		$str = "<?php\n";
-		$str .= $classRef->getDocComment() . "\n\n";
-		$str .= self::getStrClassDeclaration($classRef);
-
-		$str .= "\n{\n";
-
-		$str .= self::getStrProperties($classRef);
-		$str .= self::getStrConstants($classRef);
-		$str .= self::getStrMethods($classRef);
-
-		$str .= "}";
-		$str .= "\n>";
-
-		file_put_contents($path, $str);
-		//echo $str;
-    }
-
-    /**
-     * @static
-     * @param Zend_Reflection_Class $classRef
-     * @return string
-     */
-	private static function getStrClassDeclaration($classRef)
-	{
-		$str = "";
-		foreach (Reflection::getModifierNames($classRef->getModifiers()) as $m)
-			$str .= "$m ";
-
-		$str .= "class " . $classRef->getName();
-
-		$parentClass = $classRef->getParentClass();
-
-		if ($parentClass)
-        {
-			$str .= " extends " . $parentClass->getName();
-		}
-
-		$interfaces = $classRef->getInterfaces();
-
-		if (count($interfaces) > 0)
-		{
-			$str .= " implements ";
-			$i = 0;
-			/** @var $int Zend_Reflection_Class */
-			foreach ($interfaces as $int)
-			{
-				$i++;
-				$delim = ", ";
-				if ($i == count($interfaces))
-					$delim = "";
-
-				$str .= $int->getName() . $delim;
-			}
-
-		}
-		return $str;
-	}
-
-    /**
-     * @static
-     * @param Zend_Reflection_Class $classRef
-     * @return string
-     */
-	private static function getStrProperties($classRef)
-	{
-		$str = "";
-		$defaultProps = $classRef->getDefaultProperties();
-
-		/** @var $p Zend_Reflection_Property */
-		foreach ($classRef->getProperties() as $p)
-		{
-			$str .= self::INDENT;
-			$str .= $p->getDocComment()->getContents() . "\n";
-			$str .= self::INDENT;
-
-			foreach (Reflection::getModifierNames($p->getModifiers()) as $m)
-				$str .= "$m ";
-
-			$val = $p->isStatic() ? $p->getValue($p) : $defaultProps[$p->getName()];
-
-			$str .= "$" . $p->getName() . " = " . self::getVal($val) . ";";
-
-			$str .= "\n\n";
-		}
-
-		return $str;
-	}
-
-    /**
-     * @param Zend_Reflection_Class $classRef
-     * @return string
-     */
-	private static function getStrConstants($classRef)
-	{
-		$str = "";
-		$parentClass = $classRef->getParentClass();
-		$parentConsts = array();
-		if ($parentClass)
-		{
-			$parentConsts = $parentClass->getConstants();
-		}
-
-		foreach ($classRef->getConstants() as $cName => $cVal)
-		{
-			if (!key_exists($cName, $parentConsts))
-			{
-				$str .= self::INDENT . "const ";
-				$str .= $cName . " = " . self::getVal($cVal) . ";";
-				$str .= "\n\n";
-			}
-		}
-		return $str;
-	}
-
-    /**
-     * @param Zend_Reflection_Class $classRef
-     * @return string
-     */
-	private static function getStrMethods($classRef)
-	{
-		$str = "";
-		/** @var $m Zend_Reflection_Method */
-		foreach ($classRef->getMethods() as $m)
-		{
-			if ($m->getDeclaringClass()->getName() == "User")
-			{
-				$str .= self::INDENT;
-				$str .= $m->getDocComment() . "\n";
-				$str .= self::INDENT;
-
-				foreach (Reflection::getModifierNames($m->getModifiers()) as $mod)
-					$str .= "$mod ";
-
-				$str .= "function " . $m->getName();
-				$str .= "(";
-
-				/** @var $p Zend_Reflection_Parameter */
-				$i = 0;
-				foreach ($m->getParameters() as $p)
-				{
-					$i++;
-					$delim = ", ";
-					if ($i == count($m->getParameters()))
-						$delim = "";
-
-					$str .= "$" . $p->getName() . $delim .
-						($p->isOptional() ? " = " . self::getVal($p->getDefaultValue()) : "");
-				}
-
-				$str .= ")";
-
-				$str .= "\n" . self::INDENT . "{\n";
-				$str .= $m->getBody();
-				$str .= "\n" . self::INDENT . "}";
-
-				$str .= "\n\n";
-			}
-		}
-
-		return $str;
-	}
-
-	private static function getVal($val)
-	{
-		return is_null($val) ? "null" :
-            (is_numeric($val) ? $val :
-			    (is_string($val) ? "\"$val\"" : $val)
-            );
-
-	}
-
-    private static function tableToClassString($config, $tblName)
-    {
-        $conf = new Zend_Config($config);
-		$db = Zend_Db::factory($conf->database);
-		$db->getConnection();
-       
-        $tableMeta = $db->fetchAssoc("SHOW TABLE STATUS FROM
-            {$conf->database->params->dbname} WHERE Name = '{$tblName}'");
-
-        $fieldsMeta = $db->fetchAssoc("SHOW FULL COLUMNS FROM {$tblName}");
-
-        var_dump($fieldsMeta);
-
-        $fieldsStr = "";
-        $primaryKey = "id";
-
-        foreach ($fieldsMeta as $field)
-        {
-	        if ($field["Key"] == "PRI")
-		        $primaryKey = $field["Field"];
-
-	        if ($field["Key"] !== "PRI")
-	        {
-                $type = preg_replace('/\(.*\)/', "", $field["Type"]);
-                $replaceMapFileld =  array
-                (
-                    "{COMMENT}"           => $field["Comment"],
-                    "{TYPE}"              => self::recognizeDbType($type),
-                    "{COLUMN_ANNOTATION}" => self::PHPDOC_TAG_COLUMN . ".....",
-                    "{COLUMN_NAME}"       => $field["Field"],
-                    "{DEFAULT_VALUE}"     => self::getVal($field["Default"])
-                );
-
-                $fieldsStr .= str_replace(
-                    array_keys($replaceMapFileld),
-                    array_values($replaceMapFileld),
-                    file_get_contents($conf->get("fieldTemplate"))
-                );
-        	}
-        }
-
-        $replaceMapClass =  array
-        (
-            "{TABLE_COMMENT}"    => $tableMeta[$tblName]["Comment"],
-            "{AUTHOR}"           => "Eugene Kurbatov",
-            "{ENTITY_NAME}"      => ucfirst($tblName),
-            "{ENTITY_TABLE}"     => $tblName,
-            "{PRIMARY_KEY}"      => $primaryKey,
-            "{FIELDS_META_DATA}" => $fieldsStr,
-            "{FIELDS_LIST}"      => "//fields"
-        );
-
-        $classStr = str_replace(
-            array_keys($replaceMapClass),
-            array_values($replaceMapClass),
-            file_get_contents($conf->get("entityTemplate"))
-        );
-        return $classStr;
-    }
-
-	private static function recognizeDbType($dbType)
-	{
-        switch ($dbType)
-        {
-            case "int": case "tinyint": case "bit":
-                return "integer";
-                break;
-            case "float":
-                return "float";
-                break;
-            case "double":
-                return "double";
-                break;
-            case "decimal":
-                return "decimal";
-                break;
-            case "date": case "timestamp": case "datetime":
-                return "DateTime";
-                break;
-            case "varchar": case "text": case "tinytext": case "char":
-                return "string";
-                break;
-            default:
-                throw new Exception("Undefined type '{$dbType}'") ;
-        }
-	}
-
-
 	public static function merge($srcEntityMeta, $destEntityMeta)
 	{
 		// TODO: Implement merge() method.
-	}
-
-	public static function saveToFile($entityMeta, $path)
-	{
-		//обработка шаблона
 	}
 }
