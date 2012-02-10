@@ -161,7 +161,7 @@ class EntityMetaManager implements IEntityMetaManager
 
 					if ($field->default == "CURRENT_TIMESTAMP")
 					{
-						$options .= "{$field->default}";
+						$options .= "`{$field->default}`";
 					}
 					else
 					{
