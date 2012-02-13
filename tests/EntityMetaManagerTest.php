@@ -13,8 +13,12 @@ spl_autoload_register(function($className) {
 
 class EntityMetaManagerTest extends PHPUnit_Framework_TestCase
 {
+	private $db = null;
+
 	public function __construct()
 	{
+		$this->db = new PDO("mysql:dbname=temp;host=localhost", "root", "toor");
+		EntityMetaManager::init();
 	}
 
 	/**
@@ -115,8 +119,17 @@ class EntityMetaManagerTest extends PHPUnit_Framework_TestCase
 
 	public function testSaveToTable()
 	{
-		$ent = EntityMetaManager::createFromFile("fixtures/entities/User.php");
+		//clear temp table
+		$this->db->exec("DROP TABLE IF EXISTS `_user`");
 
+		$ent = EntityMetaManager::createFromFile("fixtures/entities/User.php");
 		EntityMetaManager::saveToTable($ent, "_user");
 	}
+
+	public function testMergeAndSaveToTable()
+	{
+		$ent = EntityMetaManager::createFromFile("fixtures/entities/User.php");
+		EntityMetaManager::mergeAndSaveToTable($ent, "user");
+	}
+
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * TODO: Добавить здесь комментарий
+ * Обработчик шаблона поля класса
  *
  * PHP version 5
  *
@@ -59,22 +59,16 @@ class FieldTemplateHandler extends BaseTemplateHandler
         {
             case "int": case "tinyint": case "bit":
                 return "integer";
-                break;
             case "float":
                 return "float";
-                break;
             case "double":
                 return "double";
-                break;
             case "decimal":
                 return "decimal";
-                break;
             case "date": case "timestamp": case "datetime":
                 return "DateTime";
-                break;
             case "varchar": case "text": case "tinytext": case "char":
                 return "string";
-                break;
             default:
                 throw new Exception("Undefined type '{$typeName}'") ;
         }

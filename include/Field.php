@@ -21,13 +21,25 @@
  *    { Значение по умолчанию }
  *    default="null"
  *
- *    { Задается первичный ключ, автоинкрементный, безнаковый, int(11) }
+ *    { Задается первичный ключ, автоинкрементный, безнаковый, int }
  *    id
  */
+
+use TokenReflection\ReflectionAnnotation;
 
 class Field
 {
 	const PHPDOC_TAG_COLUMN = "column";
+
+	const ANNOTATE_NAME = "name";
+
+	const ANNOTATE_ID = "id";
+
+	const ANNOTATE_TYPE = "type";
+
+	const ANNOTATE_ALLOW_NULL = "allowNull";
+
+	const ANNOTATE_DEFAULT = "default";
 
     /**
      * Имя поля
@@ -152,41 +164,44 @@ class Field
 		}
 
 		//Название поля
-		if (isset($arrAnnotation["name"]) && !empty($arrAnnotation["name"]))
+		if (isset($arrAnnotation[self::ANNOTATE_NAME]) &&
+			!empty($arrAnnotation[self::ANNOTATE_NAME]))
         {
-            $field->name = $arrAnnotation["name"];
+            $field->name = $arrAnnotation[self::ANNOTATE_NAME];
         }
         else
         {
             $field->name = $p->getName();
         }
 
-        //Задается первичный ключ, автоинкрементный, беззнаковый, int(11)
-        if (key_exists("id", $arrAnnotation))
+        //Задается первичный ключ, автоинкрементный, беззнаковый, int
+        if (key_exists(self::ANNOTATE_ID, $arrAnnotation))
         {
             $field->isPrimaryKey = true;
             $field->isAutoincremented = true;
             $field->isId = true;
-	        // по умолчанию
-            $field->type = "int(11) unsigned";
+            $field->type = Config::getInstance()->defaultIdType;
             $field->allowNull = false;
         }
 
 		//Тип данных; переопределяем
-		if (isset($arrAnnotation["type"]) && !empty($arrAnnotation["type"]))
+		if (isset($arrAnnotation[self::ANNOTATE_TYPE]) &&
+			!empty($arrAnnotation[self::ANNOTATE_TYPE]))
         {
-            $field->type = $arrAnnotation["type"];
+            $field->type = $arrAnnotation[self::ANNOTATE_TYPE];
         }
 
-		if (isset($arrAnnotation["allowNull"]) && self::isBool($arrAnnotation["allowNull"]))
+		if (isset($arrAnnotation[self::ANNOTATE_ALLOW_NULL]) &&
+			self::isBool($arrAnnotation[self::ANNOTATE_ALLOW_NULL]))
         {
-            $field->allowNull = self::getBool($arrAnnotation["allowNull"]);
+            $field->allowNull = self::getBool($arrAnnotation[self::ANNOTATE_ALLOW_NULL]);
         }
 
 		//Значение по умолчанию
-        if (isset($arrAnnotation["default"]) && !empty($arrAnnotation["default"]))
+        if (isset($arrAnnotation[self::ANNOTATE_DEFAULT]) &&
+		    !empty($arrAnnotation[self::ANNOTATE_DEFAULT]))
         {
-			$field->default = $arrAnnotation["default"];
+			$field->default = $arrAnnotation[self::ANNOTATE_DEFAULT];
         }
         else
         {
@@ -195,7 +210,7 @@ class Field
             $field->default = $val;
         }
 
-        $field->comment = $p->getAnnotation(\TokenReflection\ReflectionAnnotation::SHORT_DESCRIPTION);
+        $field->comment = $p->getAnnotation(ReflectionAnnotation::SHORT_DESCRIPTION);
 
 		$field->isPrivate = $p->isPrivate();
 		$field->isPublic = $p->isPublic();
@@ -227,6 +242,72 @@ class Field
 		return $arrAnnotations;
 	}
 
+	/**
+	 * Возвращает phpdoc аннотацию поля БД
+	 *
+	 * @return string
+	 */
+	public function getColumnAnnotation()
+	{
+		$annotation = "@" . self::PHPDOC_TAG_COLUMN;
+
+		if ($this->isId)
+		{
+			$annotation .= " " . self::ANNOTATE_ID;
+		}
+		else
+		{
+			$annotation .= " " . self::ANNOTATE_TYPE . "=\"{$this->type}\", "
+				. self::ANNOTATE_ALLOW_NULL . "=\""
+				. ($this->allowNull ? "true" : "false") . "\"";
+
+			if ($this->default)
+				$annotation .= ", " . self::ANNOTATE_DEFAULT . "=\"{$this->default}\"";
+		}
+
+		return $annotation;
+	}
+
+	/**
+	 * Возвращает строку-определение поля БД
+	 *
+	 * @return string
+	 */
+	public function getColumnDefeniton()
+	{
+		$defenition = strtoupper($this->type);
+		if ($this->allowNull)
+		{
+			$defenition .= " DEFAULT NULL";
+		}
+		else
+		{
+			$defenition .= " NOT NULL";
+			if (!is_null($this->default))
+			{
+				$defenition .= " DEFAULT ";
+
+				if ($this->default == "CURRENT_TIMESTAMP")
+				{
+					$defenition .= "{$this->default}";
+				}
+				else
+				{
+					$defenition .= "'{$this->default}'";
+				}
+			}
+		}
+
+		if ($this->isAutoincremented)
+		{
+			$defenition .= " AUTO_INCREMENT";
+		}
+
+		$defenition .= " COMMENT '{$this->comment}'";
+
+		return $defenition;
+	}
+
 	private static function isBool($val)
 	{
 		return $val == "true" || $val == "false";
@@ -235,26 +316,6 @@ class Field
 	private static function getBool($str)
 	{
 		return $str == "true";
-	}
-
-	public function getColumnAnnotation()
-	{
-		$annotation = "@" . self::PHPDOC_TAG_COLUMN;
-
-		if ($this->isId)
-		{
-			$annotation .= " id";
-		}
-		else
-		{
-			$annotation .= " type=\"{$this->type}\", allowNull=\""
-				. ($this->allowNull ? "true" : "false") . "\"";
-
-			if ($this->default)
-				$annotation .= ", default=\"{$this->default}\"";
-		}
-
-		return $annotation;
 	}
 
 }

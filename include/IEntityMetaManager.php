@@ -18,5 +18,5 @@ interface IEntityMetaManager
 
 	public static function saveToFile($entityMeta, $path);
 
-	public static function merge($srcEntityMeta, $destEntityMeta);
+
 }

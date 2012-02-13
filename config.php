@@ -24,4 +24,6 @@ return array(
     "fieldTemplate" => realpath(dirname(__FILE__)) . "/templates/field.tpl",
 
 	"author" => "Eugene Kurbatov",
+
+	"defaultIdType" => "int(11) unsigned",
 );

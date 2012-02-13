@@ -41,4 +41,21 @@ class EntityMeta
 	 * @var string
 	 */
 	public $strMethods = null;
+
+	/**
+	 * Возвращает поле по имени
+	 *
+	 * @param $name
+	 *
+	 * @return Field|null
+	 */
+	public function findFieldByName($name)
+	{
+		foreach ($this->fields as $f)
+		{
+			if ($f->name == $name)
+				return $f;
+		}
+		return null;
+	}
 }

@@ -24,12 +24,21 @@ use TokenReflection\Broker\Backend\Memory;
 
 class EntityMetaManager implements IEntityMetaManager
 {
-    const INDENT = "\t";
+	/**
+	 * @var Zend_Db_Adapter_Pdo_Abstract
+	 */
+	static private $db = null;
+
+	public static function init()
+	{
+		self::$db = Zend_Db::factory(Config::getInstance()->database);
+		self::$db->getConnection();
+	}
 
 	/**
 	 * Создание мета-сущности из файла
 	 *
-	 * @param $path string Путь к файлу класса
+	 * @param string $path Путь к файлу класса
 	 *
 	 * @return EntityMeta
 	 */
@@ -81,7 +90,7 @@ class EntityMetaManager implements IEntityMetaManager
 	/**
 	 * Создание мета-сущности из таблицы
 	 *
-	 * @param $tblName string Имя таблицы
+	 * @param string $tblName Имя таблицы
 	 *
 	 * @return EntityMeta
 	 */
@@ -89,16 +98,13 @@ class EntityMetaManager implements IEntityMetaManager
 	{
         $entityMeta = new EntityMeta();
 
-		$db = Zend_Db::factory(Config::getInstance()->database);
-		$db->getConnection();
-
-        $tableMeta = $db->fetchAssoc("SHOW TABLE STATUS FROM " .
+        $tableMeta = self::$db->fetchAssoc("SHOW TABLE STATUS FROM " .
             Config::getInstance()->database->params->dbname . " WHERE Name = '{$tblName}'");
 
         $entityMeta->comment = $tableMeta[$tblName]["Comment"];
         $entityMeta->name = strtolower($tblName);
 
-        $fieldsMeta = $db->fetchAssoc("SHOW FULL COLUMNS FROM {$tblName}");
+        $fieldsMeta =  self::$db->fetchAssoc("SHOW FULL COLUMNS FROM {$tblName}");
 
         foreach ($fieldsMeta as $f)
         {
@@ -125,12 +131,11 @@ class EntityMetaManager implements IEntityMetaManager
         return $entityMeta;        
 	}
 
-
 	/**
 	 * Сохранение сущности в таблицу БД
 	 *
-	 * @param $entityMeta EntityMeta Объект мета-сущности
-	 * @param $tbname string Имя таблицы
+	 * @param EntityMeta $entityMeta Объект мета-сущности
+	 * @param string $tbname  Имя таблицы
 	 *
 	 * @return void
 	 */
@@ -147,41 +152,15 @@ class EntityMetaManager implements IEntityMetaManager
 			if (!$field->isColomn)
 				continue;
 
-			$options = "";
-			if ($field->allowNull)
-			{
-				$options .= " DEFAULT NULL";
-			}
-			else
-			{
-				$options .= " NOT NULL";
-				if (!is_null($field->default))
-				{
-					$options .= " DEFAULT ";
-
-					if ($field->default == "CURRENT_TIMESTAMP")
-					{
-						$options .= "`{$field->default}`";
-					}
-					else
-					{
-						$options .= "'{$field->default}'";
-					}
-				}
-			}
-
-			if ($field->isAutoincremented)
-			{
-				$options .= " AUTO_INCREMENT";
-			}
+			$defenition = $field->getColumnDefeniton();
 
 			if ($field->isId)
 			{
-				$sql = "`{$field->name}` {$field->type} {$options} COMMENT '{$field->comment}', " . $sql;
+				$sql = "`{$field->name}` {$defenition}, " . $sql;
 			}
 			else
 			{
-				$sql .= "{$field->name} {$field->type} {$options} COMMENT '{$field->comment}', ";
+				$sql .= "{$field->name} {$defenition}, ";
 			}
 
 
@@ -190,14 +169,14 @@ class EntityMetaManager implements IEntityMetaManager
 
 		$sql = "{$beginSql}{$sql}{$endSql}";
 
-		$db->exec($sql);
+		self::$db->exec($sql);
 	}
 
 	/**
 	 * Сохранение сущности в файл
 	 *
 	 * @param $entityMeta EntityMeta Объект мета-сущности
-	 * @param $path Путь до файла
+	 * @param string $path Путь до файла
 	 *
 	 * @return void
 	 */
@@ -215,113 +194,139 @@ class EntityMetaManager implements IEntityMetaManager
 
     /**
      * Сохрание сущности в файл со слиянием
+     * todo: пока все перезаписывается из источника,
+     * возможно стоит сделать режим soft, кода поля из приемника не удаляются (только добаляени и изменения)
      *
-     * @param EntityMeta $entity
-     * @param string $path
+     * @param EntityMeta $entity Объект мета-сущности
+     * @param string $path Путь до файла
+     *
      * @return void
      */
 	public static function mergeAndSaveToFile($entity, $path)
 	{
-        //файл найден, выполним слияние
-        if (is_file($path))
-        {
-            require_once $path;
-            $classRef = new Zend_Reflection_Class($entity->name);
-
-            $str = "<?php\n";
-
-            $str .= $entity->comment . "\n\n";
-		    $str .= self::getStrClassDeclaration($classRef);
-
-		    $str .= "\n{\n";
-
-		    $defaultProps = $classRef->getDefaultProperties();
-
-            //пробежимся по полям сущности
-            /** @var $p Zend_Reflection_Property */
-            foreach ($classRef->getProperties() as $p)
-            {
-	            //пропускаем унаследованные
-	            if ($p->getDeclaringClass()->getName() != $classRef->getName())
-		            continue;
-
-	            // поле исходной сущности
-                $fieldSource = self::getFieldByName($entity, $p->getName());
-
-                //найдены поля с одинаковыми названиями, сравниваем, показываем разницу, берем из источника
-                if (!is_null($fieldSource))
-                {
-                    // поле сущности из файла
-                    $fieldDest = Field::extract($p, $defaultProps);
-
-                    //пробежим по атрибутам поля источника
-                    foreach ($fieldSource as $fieldAtribName => $fieldAtribVal)
-                    {
-                        //если значение атрибутов различно, пишем значение атрибута на основе шаблона
-                        if ($fieldAtribVal != $fieldDest->$fieldAtribName)
-                        {
-                            echo "Field: {$p->getName()}\n";
-                            echo "Atrrib: {$fieldAtribName}\n";
-                            echo "Source val: {$fieldAtribVal}\n";
-                            echo "Dest val: {$fieldDest->$fieldAtribName}\n\n\n";
-                        }
-                    }
-
-	                $type = preg_replace('/\(.*\).*/', "", $fieldSource->type);
-					$replaceMapFileld = array(
-						"{COMMENT}"           => $fieldSource->comment,
-						"{TYPE}"              => self::recognizeDbType($type),
-						"{COLUMN_ANNOTATION}" => self::PHPDOC_TAG_COLUMN . ".....",
-						"{COLUMN_NAME}"       => $fieldSource->name,
-						"{DEFAULT_VALUE}"     => self::getVal($fieldSource->default)
-					);
-
-	                $str .= str_replace(
-						array_keys($replaceMapFileld),
-						array_values($replaceMapFileld),
-						file_get_contents(self::$config->get("fieldTemplate"))
-					);
-                }
-                else
-                {
-
-                    $str .= self::INDENT;
-                    $str .= $p->getDocComment()->getContents() . "\n";
-                    $str .= self::INDENT;
-
-                    foreach (Reflection::getModifierNames($p->getModifiers()) as $m)
-                        $str .= "$m ";
-
-                    $val = $p->isStatic() ? $p->getValue($p) : $defaultProps[$p->getName()];
-                    $str .= "$" . $p->getName() . " = " . self::getVal($val) . ";";
-                    $str .= "\n\n";
-                }
-            }
-
-	        //todo: добавить поля сущности которых нет в файле
-
-		    $str .= self::getStrConstants($classRef);
-		    $str .= self::getStrMethods($classRef);
-
-		    $str .= "}";
-		    $str .= "\n?>";
-
-		    //file_put_contents($path, $str);
-        }
+		if (!is_file($path))
+		{
+			self::saveToFile($entity, $path);
+		}
 		else
 		{
-			$str = self::createClassFileByTemplate($entity);
+			self::saveToFile($entity, $path);
+
+			/*
+			//слияние
+			$entityDest = self::createFromFile($path);
+
+			$mergedEntity = $entity;
+
+			foreach ($entityDest->fields as $field)
+			{
+				$f = $mergedEntity->findFieldByName($field->name);
+				if ($f == null)
+				{
+					//вставляем поле в нужное место
+				}
+			}
+			*/
 		}
-
-		//echo iconv("utf-8", "windows-1251", $str);
-		echo "$str\n";
-
-
-
 	}
 
-	public static function merge($srcEntityMeta, $destEntityMeta)
+	/**
+	 * Сохрание таблицы со слиянием
+	 *
+	 * @param EntityMeta $entity Объект мета-сущности
+	 * @param string $tblname Имя таблицы
+	 *
+	 * @return void
+	 */
+	public static function mergeAndSaveToTable($entity, $tblname)
 	{
-		// TODO: Implement merge() method.
+		if (!self::isTableExist($tblname))
+		{
+			self::saveToTable($entity, $tblname);
+		}
+		else
+		{
+			$entityDest = self::createFromTable($tblname);
+
+			$sqlAlters = array();
+			if ($entity->name != $entityDest->name)
+			{
+				$sqlAlters[] = "ALTER TABLE `{$tblname}` RENAME `{$entity->name}`";
+			}
+
+			if ($entity->comment != $entityDest->comment)
+			{
+				$sqlAlters[] = "ALTER TABLE `{$entity->name}` COMMENT='{$entity->comment}'";
+			}
+
+			foreach ($entity->fields as $field)
+			{
+				if (!$field->isColomn)
+					continue;
+
+				$defenition = $field->getColumnDefeniton();
+
+				$fieldDest = $entityDest->findFieldByName($field->name);
+				if ($fieldDest === null)
+				{
+					$sqlAlters[] = "ALTER TABLE `{$entity->name}` ADD COLUMN `{$field->name}` {$defenition}";
+				}
+				else if (self::isDifferentColumn($field, $fieldDest))
+				{
+					$sqlAlters[] = "ALTER TABLE `{$entity->name}` CHANGE COLUMN `{$field->name}` `{$field->name}` {$defenition}";
+				}				
+			}
+
+			//удаление полей, которых нет в источник
+			foreach ($entityDest->fields as $field)
+			{
+				if (!$field->isColomn)
+					continue;
+
+				if (!$entity->findFieldByName($field->name))
+				{
+					$sqlAlters[] = "ALTER TABLE `{$entity->name}` DROP COLUMN `{$field->name}`";
+				}
+			}
+
+			foreach ($sqlAlters as $sql)
+			{
+				echo "{$sql}\n";
+				self::$db->exec($sql);
+			}
+		}
 	}
+
+	/**
+	 * @param $f1 Field
+	 * @param $f2 Field
+	 *
+	 * @return mixed
+	 */
+	private static function isDifferentColumn($f1, $f2)
+	{
+		return ($f1->allowNull != $f2->allowNull)
+			|| ($f1->isAutoincremented != $f2->isAutoincremented)
+			|| ($f1->isPrimaryKey != $f2->isPrimaryKey)
+			|| ($f1->isColomn != $f2->isColomn)
+			|| ($f1->comment != $f2->comment)
+			|| ($f1->default != $f2->default)
+			|| ($f1->isId != $f2->isId)
+			|| ($f1->name != $f2->name)
+			|| ($f1->type != $f2->type);
+	}
+
+	private static function isTableExist($tblname)
+	{
+		try
+		{
+			self::$db->describeTable($tblname);
+		}
+		catch (Zend_Db_Adapter_Exception $e)
+		{
+			return false;
+		}
+		return true;
+	}
+
 }

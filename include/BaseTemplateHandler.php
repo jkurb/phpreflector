@@ -29,6 +29,8 @@ class BaseTemplateHandler
 	}
 
 	/**
+	 * Обработка шаблона, подстановка значений переменных
+	 *
 	 * @return string
 	 */
 	public function process()
