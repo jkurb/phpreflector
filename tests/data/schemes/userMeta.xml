@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataset>
+    <table name="userMeta">
+        <column>Field</column>
+        <column>Type</column>
+        <column>Collation</column>
+        <column>Null</column>
+        <column>Key</column>
+        <column>Default</column>
+        <column>Extra</column>
+	    <column>Privileges</column>
+        <column>Comment</column>
+        <row>
+            <value>id</value>
+            <value>int(11) unsigned</value>
+	        <null />
+            <value>NO</value>
+	        <value>PRI</value>
+	        <null />
+            <value>auto_increment</value>
+	        <value>select,insert,update,references</value>
+	        <value>Id сущности</value>
+        </row>
+	    <row>
+            <value>email</value>
+            <value>varchar(255)</value>
+            <value>utf8_general_ci</value>
+            <value>NO</value>
+            <value />
+            <null />
+		    <value />
+		    <value>select,insert,update,references</value>
+            <value>Email пользователя</value>
+        </row>
+	    <row>
+            <value>phone</value>
+            <value>varchar(24)</value>
+		    <value>utf8_general_ci</value>
+            <value>YES</value>
+		    <value />
+            <null />
+		    <value />
+		    <value>select,insert,update,references</value>
+            <value>Номер телефона</value>
+        </row>
+	    <row>
+            <value>password</value>
+            <value>varchar(50)</value>
+            <value>utf8_general_ci</value>
+            <value>NO</value>
+            <value />
+            <null />
+            <value />
+		    <value>select,insert,update,references</value>
+            <value>Пароль для входа</value>
+        </row>
+	    <row>
+            <value>status</value>
+            <value>varchar(50)</value>
+            <value>utf8_general_ci</value>
+            <value>NO</value>
+            <value />
+            <null />
+            <value />
+		    <value>select,insert,update,references</value>
+            <value>Статус пользователя</value>
+        </row>
+	    <row>
+            <value>creationDate</value>
+            <value>timestamp</value>
+		    <null />
+            <value>NO</value>
+            <value />
+            <value>CURRENT_TIMESTAMP</value>
+            <value />
+		    <value>select,insert,update,references</value>
+            <value>Дата регистрации</value>
+        </row>
+	    <row>
+            <value>notificationEmail</value>
+            <value>varchar(255)</value>
+            <value>utf8_general_ci</value>
+            <value>YES</value>
+            <value />
+            <null />
+            <value />
+		    <value>select,insert,update,references</value>
+            <value>Email для уведомлений</value>
+        </row>
+    </table>
+</dataset>
