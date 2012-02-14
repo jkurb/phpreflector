@@ -12,6 +12,13 @@ class Config
 {
 	private static $instance = null;
 
+	private static $configPath = null;
+
+	public static function init($configPath)
+	{
+		self::$configPath = $configPath;
+	}
+
 	private function __construct()
 	{
 	}
@@ -20,7 +27,7 @@ class Config
 	{
 		if (self::$instance == null)
 		{
-			self::$instance = new Zend_Config(include realpath(dirname(__FILE__)) . "/../config.php");
+			self::$instance = new Zend_Config(include self::$configPath);
 		}
 		return self::$instance;
 	}

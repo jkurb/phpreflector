@@ -1,7 +1,7 @@
 <?php
 require_once 'PHPUnit/Framework.php';
 
-require_once '/var/www/phpreflector/include/TemplateHandler.php';
+require_once '/var/www/ormmanager/include/TemplateHandler.php';
 
 /**
  * Test class for TemplateHandler.

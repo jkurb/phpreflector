@@ -22,7 +22,11 @@ class FieldTemplateHandler extends BaseTemplateHandler
 
 	public function getFieldType()
 	{
-		return $this->recognizeDbType($this->field->type);
+		//todo:hardcoded value
+		if (is_null($this->field->type))
+			return "string";
+		else
+			return $this->recognizeDbType($this->field->type);
 	}
 
 	public function getFieldColumnAnnotation()
