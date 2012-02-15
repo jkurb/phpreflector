@@ -46,13 +46,13 @@ class FieldTemplateHandler extends BaseTemplateHandler
 
 	/**
 	 * @param $field Field
-	 *
+	 * @param $tplFilename Путь к файлу шаблона
 	 * @return string
 	 */
-	public function process($field)
+	public function process($field, $tplFilename)
 	{
 		$this->field = $field;
-		return parent::process();
+		return parent::process($tplFilename);
 	}
 
 	private function recognizeDbType($dbType)
@@ -81,10 +81,15 @@ class FieldTemplateHandler extends BaseTemplateHandler
 	private function getVal($val)
 	{
 		return is_null($val) ? "null" :
-            (is_numeric($val) ? $val :
+            ((is_numeric($val) || $this->startsWith($val, "self::"))  ? $val :
 			    (is_string($val) ? "\"$val\"" : $val)
             );
 
 	}
 
+	private function startsWith($haystack, $needle)
+	{
+	    $length = strlen($needle);
+	    return (substr($haystack, 0, $length) === $needle);
+	}
 }

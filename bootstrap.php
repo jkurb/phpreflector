@@ -9,8 +9,10 @@
  */
 
 set_include_path(get_include_path() . PATH_SEPARATOR .
-    realpath(dirname(__FILE__)) . "/../include/lib" . PATH_SEPARATOR .
-	realpath(dirname(__FILE__)) . "/../include");
+    realpath(dirname(__FILE__)) . "/include/lib" . PATH_SEPARATOR .
+	realpath(dirname(__FILE__)) . "/include/templateHandlers" . PATH_SEPARATOR .
+	realpath(dirname(__FILE__)) . "/include/commands" . PATH_SEPARATOR .
+	realpath(dirname(__FILE__)) . "/include");
 
 
 // Autoload

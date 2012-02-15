@@ -17,25 +17,15 @@
 class BaseTemplateHandler
 {
 	/**
-	 * Путь к файлу шаблона
-	 *
-	 * @var null|string
-	 */
-	protected $tplFilename = null;
-
-	public function __construct($tplClassFilename)
-	{
-		$this->tplFilename = $tplClassFilename;
-	}
-
-	/**
 	 * Обработка шаблона, подстановка значений переменных
+	 *
+	 * @param $tplFilename Путь к файлу шаблона
 	 *
 	 * @return string
 	 */
-	public function process()
+	public function process($tplFilename)
 	{
-		$content = file_get_contents($this->tplFilename);
+		$content = file_get_contents($tplFilename);
 
 		$matches = array();
 		preg_match_all("/{[[:upper:]_]*?}/", $content, $matches);

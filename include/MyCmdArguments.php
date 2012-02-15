@@ -20,7 +20,10 @@ class MyCmdArguments extends CmdArguments
 		}
 
 		$this->commnad = $this->cmdArgs[1];
+
+		unset($this->cmdArgs[0]);
 		unset($this->cmdArgs[1]);
+
 		$this->params = $this->cmdArgs;
 	}
 }

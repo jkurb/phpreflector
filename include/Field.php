@@ -201,7 +201,7 @@ class Field
         if (isset($arrAnnotation[self::ANNOTATE_DEFAULT]) &&
 		    !empty($arrAnnotation[self::ANNOTATE_DEFAULT]))
         {
-			$field->default = $arrAnnotation[self::ANNOTATE_DEFAULT];
+	        $field->default = $arrAnnotation[self::ANNOTATE_DEFAULT];
         }
         else
         {
@@ -209,6 +209,13 @@ class Field
             $val = $p->isStatic() ? $p->getValue($p) : $defaultProps[$p->getName()];
             $field->default = $val;
         }
+
+		/*
+		if (substr($p->getDefaultValueDefinition(), 0, strlen("self::")) == "self::")
+        {
+	        $field->default = $p->getDefaultValueDefinition();
+        }
+		*/
 
         $field->comment = $p->getAnnotation(ReflectionAnnotation::SHORT_DESCRIPTION);
 

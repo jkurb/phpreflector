@@ -5,7 +5,7 @@
  * PHP version 5
  *
  * @package Entity
- * @author  Eugene Kurbatov
+ * @author  Eugene Kurbatov <ekur@i-loto.ru>
  */
 
 class User extends Entity
@@ -24,69 +24,69 @@ class User extends Entity
 	 */
 	public $primaryKey = "id";
 
+	/**
+	 * ds fdsfdsfdsfds fdsfdsfs
+	 */
+	const JKHKHKHKH = "LJLJLJLKJKL";
 
-   /**
-	* Содержит наименование таблицы в БД, где хранятся сущности этого типа. Не является атрибутом сущности
-	*
-	* @var string
-	* @column type="", allowNull="true", default="user"
-	*/
-	public $entityTable = "user";
+	/**
+	 * ds fdsfdsfdsfds fdsfdsfs
+	 */
+	const CURRENT_TIMESTAMP = "CURRENT_TIMESTAMP";
 
-   /**
-	* Первичный ключ, обычно соответствует атрибуту "id".  Не является атрибутом сущности.
-	*
-	* @var string
-	* @column type="", allowNull="true", default="id"
-	*/
-	public $primaryKey = "id";
+	/**
+	 * Email для уведомлений
+	 *
+	 * @var string
+	 */
+	public $notif = self::JKHKHKHKH;
 
-   /**
-	* Email пользователя
-	*
-	* @var string
-	* @column type="varchar(255)", allowNull="false"
-	*/
+	/**
+	 * Email пользователя
+	 *
+	 * @var string
+	 * @column type="varchar(255)", allowNull="false"
+	 */
 	public $email = null;
 
-   /**
-	* Номер телефона
-	*
-	* @var string
-	* @column type="varchar(24)", allowNull="true"
-	*/
+	/**
+	 * Номер телефона
+	 *
+	 * @var string
+	 * @column type="varchar(24)", allowNull="true"
+	 */
 	public $phone = null;
 
-   /**
-	* Пароль для входа
-	*
-	* @var string
-	* @column type="varchar(50)", allowNull="false"
-	*/
+	/**
+	 * Пароль для входа
+	 *
+	 * @var string
+	 * @column type="varchar(50)", allowNull="false"
+	 */
 	public $password = null;
 
-   /**
-	* Статус пользователя
-	*
-	* @var string
-	* @column type="varchar(50)", allowNull="false"
-	*/
+	/**
+	 * Статус пользователя
+	 *
+	 * @var string
+	 * @column type="varchar(50)", allowNull="false"
+	 */
 	public $status = null;
 
-   /**
-	* Дата регистрации
-	*
-	* @var DateTime
-	* @column type="timestamp", allowNull="false", default="CURRENT_TIMESTAMP"
-	*/
-	public $creationDate = "CURRENT_TIMESTAMP";
+	/**
+	 * Дата регистрации
+	 *
+	 * @var DateTime
+	 * @column type="timestamp", allowNull="false", default="self::CURRENT_TIMESTAMP"
+	 */
+	public $creationDate = self::CURRENT_TIMESTAMP;
 
-   /**
-	* Email для уведомлений
-	*
-	* @var string
-	* @column type="varchar(255)", allowNull="true"
-	*/
+	/**
+	 * Email для уведомлений
+	 *
+	 * @var string
+	 * @column type="varchar(255)", allowNull="true"
+	 */
 	public $notificationEmail = null;
 
 
@@ -98,37 +98,35 @@ class User extends Entity
 	public function getFields()
 	{
 		return array(
-            "id" => self::ENTITY_FIELD_INT,
-            "email" => self::ENTITY_FIELD_STRING,
-            "phone" => self::ENTITY_FIELD_STRING,
-            "password" => self::ENTITY_FIELD_STRING,
-            "status" => self::ENTITY_FIELD_STRING,
-            "creationDate" => self::ENTITY_FIELD_DATETIME,
-            "notificationEmail" => self::ENTITY_FIELD_STRING,
+			"id" => self::ENTITY_FIELD_INT,
+			"email" => self::ENTITY_FIELD_STRING,
+			"phone" => self::ENTITY_FIELD_STRING,
+			"password" => self::ENTITY_FIELD_STRING,
+			"status" => self::ENTITY_FIELD_STRING,
+			"creationDate" => self::ENTITY_FIELD_DATETIME,
+			"notificationEmail" => self::ENTITY_FIELD_STRING,
 
 		);
 	}
 
-/**
-	 * Возвращает список полей сущности и их типы
+	/**
+	 * dsfdsfdsfdsfdsf dsf
 	 *
-	 * @return array
+	 * @return null
 	 */
-	public function getFields()
+	public function testKHKJKl()
 	{
-		return array(
-            "id" => self::ENTITY_FIELD_INT,
-            "email" => self::ENTITY_FIELD_STRING,
-            "phone" => self::ENTITY_FIELD_STRING,
-            "password" => self::ENTITY_FIELD_STRING,
-            "status" => self::ENTITY_FIELD_STRING,
-            "creationDate" => self::ENTITY_FIELD_DATETIME,
-            "notificationEmail" => self::ENTITY_FIELD_STRING,
+		return null;
+	}
 
-		);
-	}public function test()
+	/**
+	 * dfds dsf
+	 *
+	 * @return null
+	 */
+	private static function testKHK()
 	{
-
+		return null;
 	}
 
 }

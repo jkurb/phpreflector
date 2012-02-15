@@ -15,28 +15,22 @@
  * phpgen help
  */
 
-set_include_path(get_include_path() . PATH_SEPARATOR .
-    realpath(dirname(__FILE__)) . "/include");
-
-
-require_once "include/Zend/Console/Getopt.php";
-require_once "include/MyCmdArguments.php";
-require_once "include/commands/Update.php";
-require_once "include/commands/Help.php";
-require_once "include/commands/Create.php";
+require_once "bootstrap.php";
 
 try
 {
+	OrmManager::init("config.php");
+
 	$args = new MyCmdArguments($argv);
 	$args->parse();
 
 	$className = $args->getCommnad();
-	$params = $args->getParams();
+	//$params = $args->getParams();
 
 	$ref = new ReflectionClass(ucfirst($className));
 
 	/** @var $command BaseCommand */
-	$command = $ref->newInstanceArgs($params);
+	$command = $ref->newInstanceArgs();
 
 	$command->execute();
 }

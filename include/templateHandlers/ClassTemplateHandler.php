@@ -22,11 +22,10 @@ class ClassTemplateHandler extends BaseTemplateHandler
 	 */
 	protected $fieldTemplateHandler = null;
 
-	public function __construct($tplClassFilename, $tplFieldFilename, $entity)
+	public function __construct($entity)
 	{
-		parent::__construct($tplClassFilename);
 		$this->entity = $entity;
-		$this->fieldTemplateHandler = new FieldTemplateHandler($tplFieldFilename);
+		$this->fieldTemplateHandler = new FieldTemplateHandler();
 	}
 
 	public function getEntityComment()
@@ -41,17 +40,36 @@ class ClassTemplateHandler extends BaseTemplateHandler
 
 	public function getEntityMethods()
 	{
-		return $this->entity->strMethods;
+		$ignoredMethods = array("getFields");
+
+		$methodsStr = "";
+
+		/** @var $m \TokenReflection\ReflectionMethod */
+		foreach ($this->entity->methods as $m)
+		{
+			if (in_array($m->getName(), $ignoredMethods))
+				continue;
+
+			$methodsStr .= "\n\t" . $m->getSource() . "\n";
+		}
+
+		return $methodsStr;
 	}
 
 	public function getEntityConstants()
 	{
-		$this->entity->constants;
+		$constantsStr = "";
+		foreach ($this->entity->constants as $c)
+		{
+			$tplFile = Config::getInstance()->templatesDir . "/field.const.tpl";
+			$constantsStr .= $this->fieldTemplateHandler->process($c, $tplFile);
+		}
+		return $constantsStr;
 	}
 
 	public function getEntityFields()
 	{
-		$ignoredFields = array("id");
+		$ignoredFields = array("id", "entityTable", "primaryKey");
 
 		$fieldsStr = "";
 		foreach ($this->entity->fields as $f)
@@ -59,7 +77,16 @@ class ClassTemplateHandler extends BaseTemplateHandler
 			if (in_array($f->name, $ignoredFields))
 				continue;
 
-			$fieldsStr .= $this->fieldTemplateHandler->process($f);
+			if ($f->isColomn)
+			{
+				$tplFile = Config::getInstance()->templatesDir . "/field.column.tpl";
+			}
+			else
+			{
+				$tplFile = Config::getInstance()->templatesDir . "/field.tpl";
+			}
+
+			$fieldsStr .= $this->fieldTemplateHandler->process($f, $tplFile);
 		}
 
 		return $fieldsStr;
@@ -73,7 +100,7 @@ class ClassTemplateHandler extends BaseTemplateHandler
 			if (!$f->isColomn)
 				continue;
 
-			$str .= "            \"{$f->name}\" => " . $this->recognizeSoloEntityFieldType($f->type) . ",\n";
+			$str .= "\t\t\t\"{$f->name}\" => " . $this->recognizeSoloEntityFieldType($f->type) . ",\n";
 		}
 
 		return $str;

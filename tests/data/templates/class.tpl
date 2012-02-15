@@ -22,7 +22,6 @@ class {ENTITY_NAME} extends Entity
 	 * @var string
 	 */
 	public $primaryKey = "{CUSTOM_PRIMARY_KEY}";
-
 {ENTITY_CONSTANTS}
 {ENTITY_FIELDS}
 	/**
@@ -36,7 +35,5 @@ class {ENTITY_NAME} extends Entity
 {CUSTOM_FIELDS_LIST}
 		);
 	}
-
 {ENTITY_METHODS}
-
 }

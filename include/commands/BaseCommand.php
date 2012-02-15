@@ -17,13 +17,10 @@ abstract class BaseCommand
 	*/
 	protected $params = null;
 
-	public function __construct($params)
+	public function __construct()
 	{
 		//late static binding
-		$this->params = new Zend_Console_Getopt(
-			static::getDeclaration(),
-			$this->params
-		);
+		$this->params = new Zend_Console_Getopt(static::getDeclaration());
 		$this->params->parse();
 	}
 

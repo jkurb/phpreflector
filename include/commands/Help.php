@@ -12,6 +12,6 @@ class Help extends BaseCommand
 {
 	public function execute()
 	{
-		echo $this->getDescription();
+		echo "This is ORM Manager!";
 	}
 }

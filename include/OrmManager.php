@@ -47,6 +47,7 @@ class OrmManager implements IOrmManager
 
 		$broker = new Broker(new Memory());
 		$broker->processDirectory($dirname);
+		$broker->processDirectory(Config::getInstance()->processDir);
 
 		$refClass = $broker->getClass($classname);
 
@@ -54,13 +55,14 @@ class OrmManager implements IOrmManager
         $entityMeta->name = strtolower($classname);
 
 		$annotations = $refClass->getAnnotations();
-        $entityMeta->comment = $annotations[ReflectionAnnotation::SHORT_DESCRIPTION];
+        $entityMeta->comment = @$annotations[ReflectionAnnotation::SHORT_DESCRIPTION];
 
 		/** @var $c \TokenReflection\ReflectionConstant */
 		foreach ($refClass->getConstantReflections() as $c)
 		{
 			$field = new Field();
 			$field->name = $c->getName();
+			$field->comment = $c->getAnnotation(ReflectionAnnotation::SHORT_DESCRIPTION);
 			$field->default = $c->getValue();
 			$field->isConstant = true;
 			$field->isInherited = $c->getDeclaringClassName() != $refClass->getName();
@@ -79,7 +81,7 @@ class OrmManager implements IOrmManager
 		/** @var $m \TokenReflection\ReflectionMethod */
 		foreach ($refClass->getOwnMethods() as $m)
 		{
-			$entityMeta->strMethods .= $m->getSource();
+			$entityMeta->methods[] = $m;
 		}
 
         return $entityMeta;
@@ -180,13 +182,10 @@ class OrmManager implements IOrmManager
 	 */
 	public static function saveToFile($entityMeta, $path)
 	{
-		$classTplHandler = new ClassTemplateHandler(
-			Config::getInstance()->classTemplate,
-			Config::getInstance()->fieldTemplate,
-			$entityMeta
-		);
+		$classTplHandler = new ClassTemplateHandler($entityMeta);
 
-		$content = "<?php\n". $classTplHandler->process() . "\n?>";
+		$tplFile = Config::getInstance()->templatesDir . "/class.tpl";
+		$content = "<?php\n". $classTplHandler->process($tplFile) . "\n?>";
 		file_put_contents($path, $content);
 	}
 
@@ -214,7 +213,7 @@ class OrmManager implements IOrmManager
 
 			$entityMerged->name = $entity->name;
 			$entityMerged->comment = $entity->comment;
-			$entityMerged->strMethods = $entityDest->strMethods;
+			$entityMerged->methods = $entityDest->methods;
 			$entityMerged->constants = $entityDest->constants;
 
 			//оставляем свойства
@@ -222,6 +221,11 @@ class OrmManager implements IOrmManager
 			{
 				if (!$field->isColomn)
 				{
+					$constName = self::lookupConstantNameByValue($entityDest->constants, $field->default);
+					if ($constName)
+					{
+						$field->default = "self::{$constName}";
+					}
 					$entityMerged->fields[] = $field;
 				}
 			}
@@ -231,6 +235,11 @@ class OrmManager implements IOrmManager
 			{
 				if ($field->isColomn)
 				{
+					$constName = self::lookupConstantNameByValue($entityDest->constants, $field->default);
+					if ($constName)
+					{
+						$field->default = "self::{$constName}";
+					}
 					$entityMerged->fields[] = $field;
 				}
 			}
@@ -336,6 +345,25 @@ class OrmManager implements IOrmManager
 			return false;
 		}
 		return true;
+	}
+
+	/**
+	 * @param $constants
+	 * @param $value
+	 *
+	 * @return Field
+	 */
+	private static function lookupConstantNameByValue($constants, $value)
+	{
+		/** @var $c Field */
+		foreach ($constants as $c)
+		{
+			if ($c->default === $value)
+			{
+				return $c->name;
+			}
+		}
+		return null;
 	}
 
 }

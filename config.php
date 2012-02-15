@@ -15,15 +15,16 @@ return array(
             "host"     => "localhost",
             "username" => "root",
             "password" => "toor",
-            "dbname"   => "temp",
+            "dbname"   => "payanyway",
             "driver_options" => array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8")
         )
     ),
-    "classTemplate" => realpath(dirname(__FILE__)) . "/templates/class.tpl",
 
-    "fieldTemplate" => realpath(dirname(__FILE__)) . "/templates/field.tpl",
+    "templatesDir" => realpath(dirname(__FILE__)) . "/include/templates",
 
-	"author" => "Eugene Kurbatov",
+	"author" => "Eugene Kurbatov <ekur@i-loto.ru>",
 
 	"defaultIdType" => "int(11) unsigned",
+
+	"processDir" => "/var/www/payanyway.loc/www/framework/core",
 );

@@ -1,5 +1,5 @@
 <?php
-require_once "bootstrap.php";
+require_once "../bootstrap.php";
 
 class OrmManagerTest extends PHPUnit_Framework_TestCase
 {
@@ -41,7 +41,7 @@ class OrmManagerTest extends PHPUnit_Framework_TestCase
 		$this->assertEquals("Таблица содержит информацию о типах пользователей Покупатель", $ent->comment);
 		$this->assertEquals(9, count($ent->fields));
 		$this->assertEquals(8, count($ent->constants));
-		$this->assertEquals("d46125e15f318e34f3b10ca73e71db68", md5($ent->strMethods));
+		$this->assertEquals("d46125e15f318e34f3b10ca73e71db68", md5($ent->methods));
 
 		$this->assertEquals("entityTable", $ent->fields[0]->name);
 
@@ -105,7 +105,7 @@ class OrmManagerTest extends PHPUnit_Framework_TestCase
 		$this->assertFalse($ent->fields[1]->isPrimaryKey);
 		$this->assertFalse($ent->fields[1]->isAutoincremented);
 
-		$this->assertNull($ent->strMethods);
+		$this->assertNull($ent->methods);
 	}
 
 	public function testSaveToFile()
@@ -135,6 +135,7 @@ class OrmManagerTest extends PHPUnit_Framework_TestCase
 		$this->restoreUserTable();
 
 		$ent = OrmManager::createFromTable("user");
+
 		OrmManager::mergeAndSaveToFile($ent, "data/tmp/User.php");
 
 		$this->assertEquals("4f957a31b5ee8e51d75a47bbba562a68", md5_file("data/tmp/User.php"));

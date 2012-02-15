@@ -38,9 +38,9 @@ class EntityMeta
 	/**
 	 * Методы класса
 	 *
-	 * @var string
+	 * @var array
 	 */
-	public $strMethods = null;
+	public $methods = array();
 
 	/**
 	 * Возвращает поле по имени
