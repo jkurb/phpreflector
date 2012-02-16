@@ -54,8 +54,7 @@ class OrmManager implements IOrmManager
         $entityMeta = new EntityMeta();
         $entityMeta->name = strtolower($classname);
 
-		$annotations = $refClass->getAnnotations();
-        $entityMeta->comment = @$annotations[ReflectionAnnotation::SHORT_DESCRIPTION];
+		$entityMeta->comment = $refClass->getAnnotation(ReflectionAnnotation::SHORT_DESCRIPTION);
 
 		/** @var $c \TokenReflection\ReflectionConstant */
 		foreach ($refClass->getConstantReflections() as $c)
@@ -214,13 +213,22 @@ class OrmManager implements IOrmManager
 			$entityMerged->name = $entity->name;
 			$entityMerged->comment = $entity->comment;
 			$entityMerged->methods = $entityDest->methods;
-			$entityMerged->constants = $entityDest->constants;
 
-			//оставляем свойства
+			//копируем неунаследованные константы
+			foreach ($entityDest->constants as $c)
+			{
+				if (!$c->isInherited)
+				{
+					$entityMerged->constants[] = $c;
+				}
+			}
+
+			//копируем неунаследованные свойства
 			foreach ($entityDest->fields as $field)
 			{
-				if (!$field->isColomn)
+				if (!$field->isColomn && !$field->isInherited)
 				{
+					//замены значения константы именем, если знаечения сопадают
 					$constName = self::lookupConstantNameByValue($entityDest->constants, $field->default);
 					if ($constName)
 					{
